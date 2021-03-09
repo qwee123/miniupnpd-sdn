@@ -77,7 +77,10 @@ enum upnpconfigoptions {
 #ifdef IGD_V2
 	UPNPFORCEIGDDESCV1,
 #endif
-	UPNPENABLE				/* enable_upnp */
+	UPNPENABLE,				/* enable_upnp */
+#ifdef ENABLE_SDN
+	UPNPCONTROLLERADDR      /* sdn controller address */
+#endif        
 };
 
 /* readoptionsfile()

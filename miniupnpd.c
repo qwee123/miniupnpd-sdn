@@ -953,13 +953,13 @@ parselanaddr(struct lan_addr_s * lan_addr, const char * str)
 		if(!inet_aton(lan_addr->str, &lan_addr->addr))
 			goto parselan_error;
 	}
-	if(!addr_is_reserved(&lan_addr->addr)) {
+	/*if(!addr_is_reserved(&lan_addr->addr)) {
 		fprintf(stderr, "Error: LAN address contains public IP address : %s\n", lan_addr->str);
 		fprintf(stderr, "Public IP address can be configured via ext_ip= option\n");
 		fprintf(stderr, "LAN address should contain private address, e.g. from 192.168. block\n");
 		fprintf(stderr, "Listening on public IP address is a security issue\n");
 		return -1;
-	}
+	}*/  //commented for docker environ's testing
 	if(*p == '/')
 	{
 		const char * q = ++p;
@@ -2116,8 +2116,9 @@ main(int argc, char * * argv)
 			return 0;
 		}
 	}
+	
 	memset(&v, 0, sizeof(v));
-	if(init(argc, argv, &v) != 0)
+	if(init(argc, argv, &v) != 0)  /* 0 means success, 1 means error*/
 		return 1;
 #ifdef ENABLE_HTTPS
 	if(init_ssl() < 0)
@@ -2496,7 +2497,7 @@ main(int argc, char * * argv)
 		}
 		/* Check if we need to send SSDP NOTIFY messages and do it if
 		 * needed */
-		if(upnp_gettimeofday(&timeofday) < 0)
+		if(upnp_gettimeofday(&timeofday) < 0) // 0 means success, otherwise failure
 		{
 			syslog(LOG_ERR, "gettimeofday(): %m");
 			timeout.tv_sec = v.notify_interval;

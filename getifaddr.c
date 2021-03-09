@@ -272,7 +272,7 @@ static const struct { uint32_t address; uint32_t rmask; } reserved[] = {
 	{ IP(100,  64,   0, 0), MSK(10) }, /* RFC6598 Shared Address Space */
 	{ IP(127,   0,   0, 0), MSK( 8) }, /* RFC1122 Loopback */
 	{ IP(169, 254,   0, 0), MSK(16) }, /* RFC3927 Link-Local */
-	{ IP(172,  16,   0, 0), MSK(12) }, /* RFC1918 Private-Use */
+	//{ IP(172,  16,   0, 0), MSK(12) }, /* RFC1918 Private-Use */ //commented for docker environ's testing
 	{ IP(192,   0,   0, 0), MSK(24) }, /* RFC6890 IETF Protocol Assignments */
 	{ IP(192,   0,   2, 0), MSK(24) }, /* RFC5737 Documentation (TEST-NET-1) */
 	{ IP(192,  31, 196, 0), MSK(24) }, /* RFC7535 AS112-v4 */
