@@ -115,6 +115,7 @@ int n_nfqix = 0;
 unsigned nfqix[MAX_LAN_ADDR];
 #endif /* ENABLE_NFQUEUE */
 
+/* interfaces listening on the LAN */
 struct lan_addr_list lan_addrs;
 
 #ifdef ENABLE_IPV6
@@ -127,6 +128,9 @@ struct in6_addr ipv6_bind_addr;
 
 /* Path of the Unix socket used to communicate with MiniSSDPd */
 const char * minissdpdsocketpath = "/var/run/minissdpd.sock";
+
+/* Address of the controller */
+const char * controller_address = "172.21.0.1:6653";
 
 /* BOOTID.UPNP.ORG and CONFIGID.UPNP.ORG */
 /* See UPnP Device Architecture v1.1 section 1.2 Advertisement :

@@ -96,7 +96,7 @@ static const struct {
 #endif
 	{ UPNPMINISSDPDSOCKET, "minissdpdsocket"},
 	{ UPNPSECUREMODE, "secure_mode"},
-#ifdef ENABLE_SDN
+#ifdef USE_SDN
 	{ UPNPCONTROLLERADDR, "controller_address"}
 #endif
 };

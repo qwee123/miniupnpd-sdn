@@ -480,6 +480,7 @@ sendXMLdesc(struct upnphttp * h, char * (f)(int *))
 	free(desc);
 }
 
+/*$qwe$*/
 /* ProcessHTTPPOST_upnphttp()
  * executes the SOAP query if it is possible */
 static void

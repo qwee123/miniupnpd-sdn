@@ -78,7 +78,7 @@ enum upnpconfigoptions {
 	UPNPFORCEIGDDESCV1,
 #endif
 	UPNPENABLE,				/* enable_upnp */
-#ifdef ENABLE_SDN
+#ifdef USE_SDN
 	UPNPCONTROLLERADDR      /* sdn controller address */
 #endif        
 };

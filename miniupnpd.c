@@ -86,7 +86,7 @@
 #define PCP_MAX_LEN 32
 #endif
 #endif
-#include "commonrdr.h"
+#include "commonrdr.h" //abrev. of common redirect?
 #include "upnputils.h"
 #ifdef USE_IFACEWATCHER
 #include "ifacewatcher.h"
@@ -892,7 +892,7 @@ set_startup_time(void)
 struct runtime_vars {
 	/* LAN IP addresses for SSDP traffic and HTTP */
 	/* moved to global vars */
-	int port;	/* HTTP Port */
+	int port;	/* HTTP Port, default is 0, auto-select */
 #ifdef ENABLE_HTTPS
 	int https_port;	/* HTTPS Port */
 #endif
@@ -1160,7 +1160,9 @@ void complete_uuidvalues(void)
  * 8) set signal handlers
  * 9) init random generator (srandom())
  * 10) init redirection engine
- * 11) reload mapping from leasefile */
+ * 11) reload mapping from leasefile 
+ * Search "Step (x)" in code to jump to the related section quickly 
+ * e.g. "Step (1)"*/
 static int
 init(int argc, char * * argv, struct runtime_vars * v)
 {
@@ -1188,6 +1190,9 @@ init(int argc, char * * argv, struct runtime_vars * v)
 		if(0 == strcmp(argv[i], "-h") || 0 == strcmp(argv[i], "--help"))
 			goto print_usage;
 	}
+
+	/* Step (1) Read configuration file---------------------------------------------------------- */
+
 #ifndef DISABLE_CONFIG_FILE
 	/* first check if "-f" option is used */
 	for(i=2; i<argc; i++)
@@ -1226,6 +1231,7 @@ init(int argc, char * * argv, struct runtime_vars * v)
 	}
 	else
 	{
+		// num_options, ary_options are global variables from options.c
 		for(i=0; i<(int)num_options; i++)
 		{
 			switch(ary_options[i].id)
@@ -1438,6 +1444,11 @@ init(int argc, char * * argv, struct runtime_vars * v)
 				}
 				break;
 #endif
+#ifdef ENABLE_SDN
+			case UPNPCONTROLLERADDR:
+				controller_address = ary_options[i].value;
+				break;
+#endif /* ENABLE_SDN */
 			default:
 				fprintf(stderr, "Unknown option in file %s\n",
 				        optionsfile);
@@ -1458,7 +1469,8 @@ init(int argc, char * * argv, struct runtime_vars * v)
 	}
 #endif /* DISABLE_CONFIG_FILE */
 
-	/* command line arguments processing */
+	/* Step (2) read command line arguments---------------------------------------------------------- */
+
 	for(i=1; i<argc; i++)
 	{
 		if(argv[i][0]!='-')
@@ -1785,24 +1797,26 @@ init(int argc, char * * argv, struct runtime_vars * v)
 		}
 	}
 
+	/* Step (3) daemonize---------------------------------------------------------- */
 #ifndef NO_BACKGROUND_NO_PIDFILE
 	if(debug_flag)
 	{
 		pid = getpid();
 	}
-	else
-	{
+	else 	//Use system provided daemon function or author-made(miniupnpd's author) one.
+	{		//Either way, the function will fork and terminate the parent process, so the returned pid is child's.
 #ifdef USE_DAEMON
 		if(daemon(0, 0)<0) {
 			perror("daemon()");
 		}
 		pid = getpid();
-#else
+#else 
 		pid = daemonize();
 #endif
 	}
 #endif
 
+	/* Step (4) open syslog---------------------------------------------------------- */
 	openlog_option = LOG_PID|LOG_CONS;
 	if(debug_flag)
 	{
@@ -1828,6 +1842,7 @@ init(int argc, char * * argv, struct runtime_vars * v)
 		}
 	}
 
+	/* Step (5) check and write pid file---------------------------------------------------------- */
 #ifndef NO_BACKGROUND_NO_PIDFILE
 	if(checkforrunning(pidfilename) < 0)
 	{
@@ -1840,9 +1855,10 @@ init(int argc, char * * argv, struct runtime_vars * v)
 	syslog(LOG_NOTICE, "version " MINIUPNPD_VERSION " started");
 #endif /* TOMATO */
 
+	/* Step (6) set startup time stamp---------------------------------------------------------- */
 	set_startup_time();
 
-	/* presentation url */
+	/* Step (7) compute presentation URL---------------------------------------------------------- */
 	if(presurl)
 	{
 		strncpy(presentationurl, presurl, PRESENTATIONURL_MAX_LEN);
@@ -1855,7 +1871,7 @@ init(int argc, char * * argv, struct runtime_vars * v)
 		         /*"http://%s:%d/", lan_addrs.lh_first->str, 80);*/
 	}
 
-	/* set signal handler */
+	/* Step (8) set signal handlers----------------------------------------------------------  */
 	memset(&sa, 0, sizeof(struct sigaction));
 	sa.sa_handler = sigterm;
 
@@ -1893,14 +1909,14 @@ init(int argc, char * * argv, struct runtime_vars * v)
 	}
 #endif /* !TOMATO && ENABLE_LEASEFILE && LEASEFILE_USE_REMAINING_TIME */
 
-	/* initialize random number generator */
+	/* Step (9) init random generator (srandom())---------------------------------------------------------- */
 	srandom((unsigned int)time(NULL));
 #ifdef RANDOMIZE_URLS
 	snprintf(random_url, RANDOM_URL_MAX_LEN, "%08lx", random());
 #endif /* RANDOMIZE_URLS */
 
-	/* initialize redirection engine (and pinholes) */
-	if(init_redirect() < 0)
+	/* Step (10) initialize redirection engine (and pinholes)---------------------------------------------------------- */
+	if(init_redirect() < 0)   /*$qwe$ override */
 	{
 		syslog(LOG_ERR, "Failed to init redirection engine. EXITING");
 		return 1;
@@ -2062,7 +2078,7 @@ main(int argc, char * * argv)
 
 	int * snotify = NULL;
 	int addr_count;
-	LIST_HEAD(httplisthead, upnphttp) upnphttphead;
+	LIST_HEAD(httplisthead, upnphttp) upnphttphead; //contains a list of active http connection accepted by shttpl
 	struct upnphttp * e = 0;
 	struct upnphttp * next;
 	fd_set readset;	/* for select() */
@@ -2102,6 +2118,9 @@ main(int argc, char * * argv)
 #endif
 #ifdef USE_IPTABLES
 			puts("using netfilter(iptables) backend");
+#endif
+#ifdef ENABLE_SDN
+			puts("using sdn(onos) backend");
 #endif
 #ifdef USE_NFTABLES
 			puts("using netfilter(nftables) backend");
@@ -2144,7 +2163,7 @@ main(int argc, char * * argv)
 	}
 #endif
 
-	LIST_INIT(&upnphttphead);
+	LIST_INIT(&upnphttphead); // init the list, set head pointer of the list to null
 #ifdef USE_MINIUPNPDCTL
 	LIST_INIT(&ctllisthead);
 #endif
@@ -2203,12 +2222,12 @@ main(int argc, char * * argv)
 	if(GETFLAG(ENABLEUPNPMASK))
 	{
 		unsigned short listen_port;
-		listen_port = (v.port > 0) ? v.port : 0;
+		listen_port = (v.port > 0) ? v.port : 0; // If listen_port is 0, auto-select will be used
 		/* open socket for HTTP connections. Listen on the 1st LAN address */
 #ifdef ENABLE_IPV6
 		shttpl = OpenAndConfHTTPSocket(&listen_port, !GETFLAG(IPV6DISABLEDMASK));
 #else /* ENABLE_IPV6 */
-		shttpl = OpenAndConfHTTPSocket(&listen_port);
+		shttpl = OpenAndConfHTTPSocket(&listen_port); // For SCDP and SOAP action
 #endif /* ENABLE_IPV6 */
 		if(shttpl < 0)
 		{
@@ -2433,7 +2452,7 @@ main(int argc, char * * argv)
 	}
 #endif /* HAS_LIBCAP_NG */
 
-	/* main loop */
+	/* MAIN: main loop */
 	while(!quitting)
 	{
 #ifdef USE_TIME_AS_BOOTID
@@ -2535,7 +2554,7 @@ main(int argc, char * * argv)
 				}
 			}
 		}
-		/* remove unused rules */
+		/* remove unused rules */ /*$qwe$*/
 		if( v.clean_ruleset_interval
 		  && (timeofday.tv_sec >= checktime.tv_sec + v.clean_ruleset_interval))
 		{
@@ -2556,7 +2575,7 @@ main(int argc, char * * argv)
 		  && ((unsigned int)timeofday.tv_sec >= nextruletoclean_timestamp))
 		{
 			syslog(LOG_DEBUG, "cleaning expired Port Mappings");
-			get_upnp_rules_state_list(0);
+			get_upnp_rules_state_list(0); /*$qwe$*/
 		}
 		if(nextruletoclean_timestamp
 		  && ((unsigned int)timeout.tv_sec >= (nextruletoclean_timestamp - timeofday.tv_sec)))
@@ -2640,7 +2659,7 @@ main(int argc, char * * argv)
 		{
 			if(e->socket >= 0)
 			{
-				if(e->state <= EWaitingForHttpContent)
+				if(e->state <= EWaitingForHttpContent) //socket is waiting for GET or POST request
 					FD_SET(e->socket, &readset);
 				else if(e->state == ESendingAndClosing)
 					FD_SET(e->socket, &writeset);
@@ -2930,7 +2949,7 @@ main(int argc, char * * argv)
 				if(FD_ISSET(e->socket, &readset) ||
 				   FD_ISSET(e->socket, &writeset))
 				{
-					Process_upnphttp(e);
+					Process_upnphttp(e); /*$qwe$*/
 				}
 			}
 		}

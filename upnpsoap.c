@@ -2251,14 +2251,14 @@ GetAssignedRoles(struct upnphttp * h, const char * action, const char * ns)
 static const struct
 {
 	const char * methodName;
-	void (*methodImpl)(struct upnphttp *, const char *, const char *);
+	void (*methodImpl)(struct upnphttp *, const char *, const char *); //methodImpl is a pointer of function
 }
 soapMethods[] =
 {
 	/* WANCommonInterfaceConfig */
 	{ "QueryStateVariable", QueryStateVariable},
-	{ "GetTotalBytesSent", GetTotalBytesSent},
-	{ "GetTotalBytesReceived", GetTotalBytesReceived},
+	{ "GetTotalBytesSent", GetTotalBytesSent}, /*$qwe$*/
+	{ "GetTotalBytesReceived", GetTotalBytesReceived}, 
 	{ "GetTotalPacketsSent", GetTotalPacketsSent},
 	{ "GetTotalPacketsReceived", GetTotalPacketsReceived},
 	{ "GetCommonLinkProperties", GetCommonLinkProperties},

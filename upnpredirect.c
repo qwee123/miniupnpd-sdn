@@ -26,6 +26,9 @@
 #include "upnpevents.h"
 #include "portinuse.h"
 #include "upnputils.h"
+#if defined(USE_SDN)
+#include "sdn/iptcrdr.h"
+#endif
 #if defined(USE_NETFILTER)
 #include "netfilter/iptcrdr.h"
 #endif

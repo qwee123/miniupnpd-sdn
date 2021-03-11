@@ -162,6 +162,8 @@ extern struct in6_addr ipv6_bind_addr;
 
 extern const char * minissdpdsocketpath;
 
+extern const char * controller_address;
+
 /* BOOTID.UPNP.ORG and CONFIGID.UPNP.ORG */
 extern unsigned int upnp_bootid;
 extern unsigned int upnp_configid;
