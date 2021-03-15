@@ -1072,6 +1072,7 @@ parselan_error:
 	return -1;
 }
 
+#ifndef USE_SDN
 static char ext_addr_str[INET_ADDRSTRLEN];
 
 int update_ext_ip_addr_from_stun(int init)
@@ -1119,6 +1120,8 @@ int update_ext_ip_addr_from_stun(int init)
 	disable_port_forwarding = restrictive_nat;
 	return 0;
 }
+
+#endif
 
 /* fill uuidvalue_wan and uuidvalue_wcd based on uuidvalue_igd */
 void complete_uuidvalues(void)
@@ -1236,6 +1239,7 @@ init(int argc, char * * argv, struct runtime_vars * v)
 		{
 			switch(ary_options[i].id)
 			{
+#ifndef USE_SDN //ext_if_name and ip_addr will be configured during init_redirect process when sdn is enabled.
 			case UPNPEXT_IFNAME:
 				ext_if_name = ary_options[i].value;
 				break;
@@ -1257,6 +1261,7 @@ init(int argc, char * * argv, struct runtime_vars * v)
 			case UPNPEXT_STUN_PORT:
 				ext_stun_port = atoi(ary_options[i].value);
 				break;
+#endif
 			case UPNPLISTENING_IP:
 				lan_addr = (struct lan_addr_s *) malloc(sizeof(struct lan_addr_s));
 				if (lan_addr == NULL)
@@ -1444,11 +1449,11 @@ init(int argc, char * * argv, struct runtime_vars * v)
 				}
 				break;
 #endif
-#ifdef ENABLE_SDN
+#ifdef USE_SDN
 			case UPNPCONTROLLERADDR:
 				controller_address = ary_options[i].value;
 				break;
-#endif /* ENABLE_SDN */
+#endif /* USE_SDN */
 			default:
 				fprintf(stderr, "Unknown option in file %s\n",
 				        optionsfile);
@@ -1462,10 +1467,12 @@ init(int argc, char * * argv, struct runtime_vars * v)
 			return 1;
 		}
 #endif	/* ENABLE_PCP */
+#ifndef USE_SDN
 		if (GETFLAG(PERFORMSTUNMASK) && !ext_stun_host) {
 			fprintf(stderr, "You must specify ext_stun_host= when ext_perform_stun=yes\n");
 			return 1;
 		}
+#endif
 	}
 #endif /* DISABLE_CONFIG_FILE */
 
@@ -1502,6 +1509,7 @@ init(int argc, char * * argv, struct runtime_vars * v)
 			} else
 				fprintf(stderr, "Option -%c takes one argument.\n", argv[i][1]);
 			break;
+#ifndef USE_SDN:
 		case 'o':
 			if(i+1 < argc) {
 				i++;
@@ -1519,6 +1527,21 @@ init(int argc, char * * argv, struct runtime_vars * v)
 			} else
 				fprintf(stderr, "Option -%c takes one argument.\n", argv[i][1]);
 			break;
+		case 'i':
+			if(i+1 < argc)
+				ext_if_name = argv[++i];
+			else
+				fprintf(stderr, "Option -%c takes one argument.\n", argv[i][1]);
+			break;
+#ifdef ENABLE_IPV6
+		case 'I':
+			if(i+1 < argc)
+				ext_if_name6 = argv[++i];
+			else
+				fprintf(stderr, "Option -%c takes one argument.\n", argv[i][1]);
+			break;
+#endif
+#endif
 		case 't':
 			if(i+1 < argc)
 				v->notify_interval = atoi(argv[++i]);
@@ -1583,20 +1606,6 @@ init(int argc, char * * argv, struct runtime_vars * v)
 		case 'S':
 			SETFLAG(SECUREMODEMASK);
 			break;
-		case 'i':
-			if(i+1 < argc)
-				ext_if_name = argv[++i];
-			else
-				fprintf(stderr, "Option -%c takes one argument.\n", argv[i][1]);
-			break;
-#ifdef ENABLE_IPV6
-		case 'I':
-			if(i+1 < argc)
-				ext_if_name6 = argv[++i];
-			else
-				fprintf(stderr, "Option -%c takes one argument.\n", argv[i][1]);
-			break;
-#endif
 #ifdef USE_PF
 		case 'q':
 			if(i+1 < argc)
@@ -1770,7 +1779,11 @@ init(int argc, char * * argv, struct runtime_vars * v)
 			fprintf(stderr, "Unknown option: %s\n", argv[i]);
 		}
 	}
-	if(!ext_if_name || !lan_addrs.lh_first) {
+	if(
+#ifndef USE_SDN
+		!ext_if_name || 
+#endif
+		!lan_addrs.lh_first) {
 		/* bad configuration */
 		goto print_usage;
 	}
@@ -1781,6 +1794,7 @@ init(int argc, char * * argv, struct runtime_vars * v)
 		ext_if_name6 = ext_if_name;
 #endif
 
+#ifndef USE_SDN
 	if (use_ext_ip_addr && GETFLAG(PERFORMSTUNMASK)) {
 		fprintf(stderr, "Error: options ext_ip= and ext_perform_stun=yes cannot be specified together\n");
 		return 1;
@@ -1796,6 +1810,7 @@ init(int argc, char * * argv, struct runtime_vars * v)
 			return 1;
 		}
 	}
+#endif
 
 	/* Step (3) daemonize---------------------------------------------------------- */
 #ifndef NO_BACKGROUND_NO_PIDFILE
@@ -1916,11 +1931,12 @@ init(int argc, char * * argv, struct runtime_vars * v)
 #endif /* RANDOMIZE_URLS */
 
 	/* Step (10) initialize redirection engine (and pinholes)---------------------------------------------------------- */
-	if(init_redirect() < 0)   /*$qwe$ override */
+	if(init_redirect() < 0)
 	{
 		syslog(LOG_ERR, "Failed to init redirection engine. EXITING");
 		return 1;
 	}
+
 #ifdef ENABLE_UPNPPINHOLE
 #ifdef USE_NETFILTER
 	init_iptpinhole();
@@ -2119,7 +2135,7 @@ main(int argc, char * * argv)
 #ifdef USE_IPTABLES
 			puts("using netfilter(iptables) backend");
 #endif
-#ifdef ENABLE_SDN
+#ifdef USE_SDN
 			puts("using sdn(onos) backend");
 #endif
 #ifdef USE_NFTABLES
@@ -2190,13 +2206,17 @@ main(int argc, char * * argv)
 	       " ",
 #endif
 	       GETFLAG(ENABLEUPNPMASK) ? "UPnP-IGD " : "",
-	       ext_if_name, upnp_bootid);
+#ifndef USE_SDN
+	       ext_if_name,
+#endif
+		   upnp_bootid);
 #ifdef ENABLE_IPV6
 	if (ext_if_name6 != ext_if_name) {
 		syslog(LOG_INFO, "specific IPv6 ext if %s", ext_if_name6);
 	}
 #endif
 
+#ifndef USE_SDN
 	if(GETFLAG(PERFORMSTUNMASK))
 	{
 		if (update_ext_ip_addr_from_stun(1) != 0) {
@@ -2218,6 +2238,7 @@ main(int argc, char * * argv)
 			disable_port_forwarding = 1;
 		}
 	}
+#endif
 
 	if(GETFLAG(ENABLEUPNPMASK))
 	{
@@ -2473,6 +2494,7 @@ main(int argc, char * * argv)
 		if(should_send_public_address_change_notif)
 		{
 			syslog(LOG_INFO, "should send external iface address change notification(s)");
+#ifndef USE_SDN
 			if(GETFLAG(PERFORMSTUNMASK))
 				update_ext_ip_addr_from_stun(0);
 			if (!use_ext_ip_addr)
@@ -2492,6 +2514,7 @@ main(int argc, char * * argv)
 					disable_port_forwarding = reserved;
 				}
 			}
+#endif
 #ifdef ENABLE_NATPMP
 			if(GETFLAG(ENABLENATPMPMASK))
 				SendNATPMPPublicAddressChangeNotification(snatpmp, addr_count);
@@ -2514,6 +2537,7 @@ main(int argc, char * * argv)
 #endif
 			should_send_public_address_change_notif = 0;
 		}
+
 		/* Check if we need to send SSDP NOTIFY messages and do it if
 		 * needed */
 		if(upnp_gettimeofday(&timeofday) < 0) // 0 means success, otherwise failure
@@ -2554,7 +2578,9 @@ main(int argc, char * * argv)
 				}
 			}
 		}
-		/* remove unused rules */ /*$qwe$*/
+
+#ifndef USE_SDN /* $qwe$ */
+		/* remove unused rules */ 
 		if( v.clean_ruleset_interval
 		  && (timeofday.tv_sec >= checktime.tv_sec + v.clean_ruleset_interval))
 		{
@@ -2585,6 +2611,7 @@ main(int argc, char * * argv)
 			syslog(LOG_DEBUG, "setting timeout to %u sec",
 			       (unsigned)timeout.tv_sec);
 		}
+#endif
 #ifdef ENABLE_UPNPPINHOLE
 		/* Clean up expired IPv6 PinHoles */
 		next_pinhole_ts = 0;

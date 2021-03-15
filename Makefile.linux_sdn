@@ -55,7 +55,7 @@ include $(SRCDIR)/objects.mk
 
 # sources in netfilter/ directory
 #NETFILTEROBJS = iptcrdr.o iptpinhole.o nfct_get.o
-SDNOBJS = iptcrdr.o iptpinhole.o nfct_get.o
+SDNOBJS = iptcrdr.o iptpinhole.o nfct_get.o onosclient.o mongoose.o
 
 ALLOBJS = $(BASEOBJS) $(LNXOBJS) $(SDNOBJS)
 
@@ -63,18 +63,17 @@ DEP = $(ALLOBJS:.o=.d)
 
 #LDLIBS += -lnfnetlink
 
-# This seems unrelevant to the experiment, commented for now. OpenWrt is a linux distro for embedded devices.
 ## OpenWrt packager disables https server for IGD v2 and hardcodes libuuid support
-#	ifeq ($(TARGET_OPENWRT),)
-#	LDLIBS += $(shell $(PKG_CONFIG) --static --libs-only-l libssl)
-#
-#	TEST := $(shell $(PKG_CONFIG) --exists uuid && echo 1)
-#	ifeq ($(TEST),1)
-#	LDLIBS += $(shell $(PKG_CONFIG) --static --libs-only-l uuid)
-#	else
-#	$(info please install uuid-dev package / libuuid)
-#	endif # ($(TEST),1)
-#	endif # ($(TARGET_OPENWRT,)
+ifeq ($(TARGET_OPENWRT),)
+LDLIBS += $(shell $(PKG_CONFIG) --static --libs-only-l libssl)
+
+TEST := $(shell $(PKG_CONFIG) --exists uuid && echo 1)
+ifeq ($(TEST),1)
+LDLIBS += $(shell $(PKG_CONFIG) --static --libs-only-l uuid)
+else
+$(info please install uuid-dev package / libuuid)
+endif # ($(TEST),1)
+endif # ($(TARGET_OPENWRT,)
 
 GLIBC_VERSION := $(shell ldd --version | head -n 1 | sed 's/^.* //') # 's/^.* //' remove all words trailing with space. 
 GLIBC_VERSION_MAJOR = $(shell echo $(GLIBC_VERSION) | cut -f 1 -d . ) # -f the order of the selected field, -d the delimiter
@@ -188,6 +187,9 @@ dox:	$(SRCDIR)/miniupnpd.doxyconf
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
 %.o:	$(SRCDIR)/sdn/%.c
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
+
+%.o:	$(SRCDIR)/sdn/mongoose/%.c
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
 print-%:

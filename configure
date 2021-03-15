@@ -368,7 +368,14 @@ case $OS_NAME in
 					;;
 			esac
 		fi
-		echo "#define USE_IFACEWATCHER 1" >> ${CONFIGFILE}
+		
+		if [ -n ${FW} ] && [ "$FW" = "sdn" ]; then
+			echo "/* Uncomment following line to use ifacewatcher */" >> ${CONFIGFILE}
+			echo "/* #define USE_IFACEWATCHER 1 */" >> ${CONFIGFILE}
+		else
+			echo "#define USE_IFACEWATCHER 1" >> ${CONFIGFILE}
+		fi
+
 		if [ -z ${FW} ]; then
 			# test the current environment to determine which to use
 			# Would be better to check for actual presence of nftable rules, but that requires root privileges
@@ -637,8 +644,9 @@ echo "/* Comment the following line to disable NAT-PMP operations */" >> ${CONFI
 echo "#define ENABLE_NATPMP" >> ${CONFIGFILE}
 echo "" >> ${CONFIGFILE}
 
-echo "/* Comment the following line to disable PCP operations */" >> ${CONFIGFILE}
-echo "#define ENABLE_PCP" >> ${CONFIGFILE}
+# ENABLE_PCP is commented for simplicity for now.
+echo "/* Comment the following line to disable PCP operations */" >> ${CONFIGFILE} 
+echo "/* #define ENABLE_PCP */" >> ${CONFIGFILE}
 echo "" >> ${CONFIGFILE}
 
 echo "#ifdef ENABLE_PCP" >> ${CONFIGFILE}

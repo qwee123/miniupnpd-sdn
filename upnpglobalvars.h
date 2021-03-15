@@ -162,7 +162,9 @@ extern struct in6_addr ipv6_bind_addr;
 
 extern const char * minissdpdsocketpath;
 
+#ifdef USE_SDN
 extern const char * controller_address;
+#endif
 
 /* BOOTID.UPNP.ORG and CONFIGID.UPNP.ORG */
 extern unsigned int upnp_bootid;

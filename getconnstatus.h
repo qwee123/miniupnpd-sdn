@@ -17,6 +17,8 @@
  *  3 - PendingDisconnect
  *  4 - Disconnecting
  *  5 - Disconnected */
+
+#ifndef USE_SDN
 int
 get_wan_connection_status(const char * ifname);
 
@@ -25,6 +27,17 @@ get_wan_connection_status(const char * ifname);
  * as a C string */
 const char *
 get_wan_connection_status_str(const char * ifname);
+
+#else
+int
+get_wan_connection_status();
+
+/**
+ * return the same value as get_wan_connection_status()
+ * as a C string */
+const char *
+get_wan_connection_status_str();
+#endif
 
 #endif
 

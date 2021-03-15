@@ -332,6 +332,7 @@ GetExternalIPAddress(struct upnphttp * h, const char * action, const char * ns)
 	/* Does that method need to work with IPv6 ?
 	 * There is usually no NAT with IPv6 */
 
+#ifndef USE_SDN
 #ifndef MULTIPLE_EXTERNAL_IP
 	if(use_ext_ip_addr)
 	{
@@ -364,6 +365,14 @@ GetExternalIPAddress(struct upnphttp * h, const char * action, const char * ns)
 		}
 	}
 #endif
+#else
+	if(get_external_ip_addr(ext_ip_addr, INET_ADDRSTRLEN) < 0)
+	{
+		syslog(LOG_ERR, "Failed to get ip address from controller");
+		strncpy(ext_ip_addr, "0.0.0.0", INET_ADDRSTRLEN);
+	}
+#endif
+
 	if (strcmp(ext_ip_addr, "0.0.0.0") == 0)
 	{
 		SoapError(h, 501, "Action Failed");
@@ -403,7 +412,15 @@ AddPortMapping(struct upnphttp * h, const char * action, const char * ns)
 	struct in_addr result_ip;/*unsigned char result_ip[16];*/ /* inet_pton() */
 
 	ParseNameValue(h->req_buf + h->req_contentoff, h->req_contentlen, &data);
+	
 	int_ip = GetValueFromNameValueList(&data, "NewInternalClient");
+	r_host = GetValueFromNameValueList(&data, "NewRemoteHost");
+	int_port = GetValueFromNameValueList(&data, "NewInternalPort");
+	ext_port = GetValueFromNameValueList(&data, "NewExternalPort");
+	protocol = GetValueFromNameValueList(&data, "NewProtocol");
+	desc = GetValueFromNameValueList(&data, "NewPortMappingDescription");
+	leaseduration_str = GetValueFromNameValueList(&data, "NewLeaseDuration");
+
 	if (int_ip) {
 		/* trim */
 		while(int_ip[0] == ' ')
@@ -420,7 +437,6 @@ AddPortMapping(struct upnphttp * h, const char * action, const char * ns)
 
 	/* IGD 2 MUST support both wildcard and specific IP address values
 	 * for RemoteHost (only the wildcard value was REQUIRED in release 1.0) */
-	r_host = GetValueFromNameValueList(&data, "NewRemoteHost");
 #ifndef SUPPORT_REMOTEHOST
 #ifdef UPNP_STRICT
 	if (r_host && (r_host[0] != '\0') && (0 != strcmp(r_host, "*")))
@@ -477,12 +493,6 @@ AddPortMapping(struct upnphttp * h, const char * action, const char * ns)
 			return;
 		}
 	}
-
-	int_port = GetValueFromNameValueList(&data, "NewInternalPort");
-	ext_port = GetValueFromNameValueList(&data, "NewExternalPort");
-	protocol = GetValueFromNameValueList(&data, "NewProtocol");
-	desc = GetValueFromNameValueList(&data, "NewPortMappingDescription");
-	leaseduration_str = GetValueFromNameValueList(&data, "NewLeaseDuration");
 
 	if (!int_port || !ext_port || !protocol)
 	{
@@ -583,7 +593,6 @@ AddAnyPortMapping(struct upnphttp * h, const char * action, const char * ns)
 
 	char body[512];
 	int bodylen;
-
 	struct NameValueParserData data;
 	const char * int_ip, * int_port, * ext_port, * protocol, * desc;
 	const char * r_host;
@@ -2257,7 +2266,7 @@ soapMethods[] =
 {
 	/* WANCommonInterfaceConfig */
 	{ "QueryStateVariable", QueryStateVariable},
-	{ "GetTotalBytesSent", GetTotalBytesSent}, /*$qwe$*/
+	{ "GetTotalBytesSent", GetTotalBytesSent}, 
 	{ "GetTotalBytesReceived", GetTotalBytesReceived}, 
 	{ "GetTotalPacketsSent", GetTotalPacketsSent},
 	{ "GetTotalPacketsReceived", GetTotalPacketsReceived},

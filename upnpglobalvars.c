@@ -13,6 +13,7 @@
 #include "upnpglobalvars.h"
 #include "upnpdescstrings.h"
 
+#ifndef USE_SDN
 /* network interface for internet */
 const char * ext_if_name = 0;
 
@@ -25,14 +26,15 @@ const char * ext_if_name6 = 0;
 const char * ext_stun_host = 0;
 uint16_t ext_stun_port = 0;
 
+/* forced ip address to use for this interface
+ * when NULL, getifaddr() is used */
+const char * use_ext_ip_addr = 0;
+#endif
+
 /* file to store leases */
 #ifdef ENABLE_LEASEFILE
 const char* lease_file = 0;
 #endif
-
-/* forced ip address to use for this interface
- * when NULL, getifaddr() is used */
-const char * use_ext_ip_addr = 0;
 
 /* disallow all port forwarding requests when
  * we are behind restrictive nat */
@@ -129,8 +131,10 @@ struct in6_addr ipv6_bind_addr;
 /* Path of the Unix socket used to communicate with MiniSSDPd */
 const char * minissdpdsocketpath = "/var/run/minissdpd.sock";
 
+#ifdef USE_SDN
 /* Address of the controller */
 const char * controller_address = "172.21.0.1:6653";
+#endif
 
 /* BOOTID.UPNP.ORG and CONFIGID.UPNP.ORG */
 /* See UPnP Device Architecture v1.1 section 1.2 Advertisement :
