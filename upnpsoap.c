@@ -34,6 +34,9 @@
 #include "getconnstatus.h"
 #include "upnpurns.h"
 #include "upnputils.h"
+#ifdef USE_SDN
+#include "sdn/iptcrdr.h"
+#endif
 
 /* utility function */
 static int is_numeric(const char * s)
@@ -119,9 +122,15 @@ GetTotalBytesSent(struct upnphttp * h, const char * action, const char * ns)
 
 	char body[512];
 	int bodylen;
-	struct ifdata data;
 
+#ifdef USE_SDN
+	struct igd_runtime_status data;
+	r = get_sdn_igd_runtime_status(&data);
+#else
+	struct ifdata data;
 	r = getifstats(ext_if_name, &data);
+#endif
+
 	bodylen = snprintf(body, sizeof(body), resp,
 	         action, ns, /* was "urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1" */
 #ifdef UPNP_STRICT
@@ -145,9 +154,15 @@ GetTotalBytesReceived(struct upnphttp * h, const char * action, const char * ns)
 
 	char body[512];
 	int bodylen;
-	struct ifdata data;
 
+#ifdef USE_SDN
+	struct igd_runtime_status data;
+	r = get_sdn_igd_runtime_status(&data);
+#else
+	struct ifdata data;
 	r = getifstats(ext_if_name, &data);
+#endif
+
 	/* TotalBytesReceived
 	 * This variable represents the cumulative counter for total number of
 	 * bytes received downstream across all connection service instances on
@@ -176,9 +191,15 @@ GetTotalPacketsSent(struct upnphttp * h, const char * action, const char * ns)
 
 	char body[512];
 	int bodylen;
-	struct ifdata data;
 
+#ifdef USE_SDN
+	struct igd_runtime_status data;
+	r = get_sdn_igd_runtime_status(&data);
+#else
+	struct ifdata data;
 	r = getifstats(ext_if_name, &data);
+#endif
+
 	bodylen = snprintf(body, sizeof(body), resp,
 	         action, ns,/*"urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1",*/
 #ifdef UPNP_STRICT
@@ -202,9 +223,15 @@ GetTotalPacketsReceived(struct upnphttp * h, const char * action, const char * n
 
 	char body[512];
 	int bodylen;
-	struct ifdata data;
 
+#ifdef USE_SDN
+	struct igd_runtime_status data;
+	r = get_sdn_igd_runtime_status(&data);
+#else
+	struct ifdata data;
 	r = getifstats(ext_if_name, &data);
+#endif
+
 	bodylen = snprintf(body, sizeof(body), resp,
 	         action, ns, /* was "urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1" */
 #ifdef UPNP_STRICT
@@ -231,7 +258,11 @@ GetCommonLinkProperties(struct upnphttp * h, const char * action, const char * n
 
 	char body[2048];
 	int bodylen;
+#ifdef USE_SDN
+	struct igd_runtime_status data;
+#else
 	struct ifdata data;
+#endif
 	const char * status = "Up";	/* Up, Down (Required),
 	                             * Initializing, Unavailable (Optional) */
 	const char * wan_access_type = "Cable"; /* DSL, POTS, Cable, Ethernet */
@@ -239,15 +270,25 @@ GetCommonLinkProperties(struct upnphttp * h, const char * action, const char * n
 
 	if((downstream_bitrate == 0) || (upstream_bitrate == 0))
 	{
+#ifdef USE_SDN
+		if(get_sdn_igd_runtime_status(&data) >= 0)
+#else
 		if(getifstats(ext_if_name, &data) >= 0)
+#endif
 		{
 			if(downstream_bitrate == 0) downstream_bitrate = data.baudrate;
 			if(upstream_bitrate == 0) upstream_bitrate = data.baudrate;
 		}
 	}
+#ifdef USE_SDN
+	if(get_sdn_igd_external_ip_addr(ext_ip_addr, INET_ADDRSTRLEN) < 0) {
+		status = "Down";
+	}
+#else
 	if(getifaddr(ext_if_name, ext_ip_addr, INET_ADDRSTRLEN, NULL, NULL) < 0) {
 		status = "Down";
 	}
+#endif
 	bodylen = snprintf(body, sizeof(body), resp,
 	    action, ns, /* was "urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1" */
 	    wan_access_type,
@@ -275,7 +316,11 @@ GetStatusInfo(struct upnphttp * h, const char * action, const char * ns)
 	 * Unconfigured, Connecting, Connected, PendingDisconnect,
 	 * Disconnecting, Disconnected */
 
+#ifdef USE_SDN
+	status = get_wan_connection_status_str();
+#else
 	status = get_wan_connection_status_str(ext_if_name);
+#endif
 	uptime = upnp_get_uptime();
 	bodylen = snprintf(body, sizeof(body), resp,
 		action, ns, /*SERVICE_TYPE_WANIPC,*/
@@ -366,7 +411,7 @@ GetExternalIPAddress(struct upnphttp * h, const char * action, const char * ns)
 	}
 #endif
 #else
-	if(get_external_ip_addr(ext_ip_addr, INET_ADDRSTRLEN) < 0)
+	if(get_sdn_igd_external_ip_addr(ext_ip_addr, INET_ADDRSTRLEN) < 0)
 	{
 		syslog(LOG_ERR, "Failed to get ip address from controller");
 		strncpy(ext_ip_addr, "0.0.0.0", INET_ADDRSTRLEN);
@@ -1427,7 +1472,11 @@ QueryStateVariable(struct upnphttp * h, const char * action, const char * ns)
 	{
 		const char * status;
 
+#ifdef USE_SDN
+		status = get_wan_connection_status_str();
+#else
 		status = get_wan_connection_status_str(ext_if_name);
+#endif
 		bodylen = snprintf(body, sizeof(body), resp,
                            action, ns,/*"urn:schemas-upnp-org:control-1-0",*/
 		                   status, action);

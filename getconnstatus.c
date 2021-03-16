@@ -38,7 +38,6 @@ get_wan_connection_status(
 #endif
 )
 {
-	char addr[INET_ADDRSTRLEN];
 	int r;
 
 	/* we need a better implementation here.
@@ -46,6 +45,7 @@ get_wan_connection_status(
 #ifdef USE_SDN
 	r = get_sdn_wan_connection_status();
 #else
+	char addr[INET_ADDRSTRLEN];
 	r = getifaddr(ifname, addr, INET_ADDRSTRLEN, NULL, NULL);
 #endif
 	return (r < 0) ? STATUS_DISCONNECTED : STATUS_CONNECTED;

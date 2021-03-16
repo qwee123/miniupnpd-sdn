@@ -20,15 +20,14 @@
 #include "config.h"
 #include "onosclient.h"
 #include "mongoose/mongoose.h"
+#include "../macros.h"
+#include "iptcrdr.h"
+#include "../upnpglobalvars.h"
 
 /* IPT_ALIGN was renamed XT_ALIGN in iptables-1.4.11 */
 #ifndef IPT_ALIGN
 #define IPT_ALIGN XT_ALIGN
 #endif
-
-#include "../macros.h"
-#include "iptcrdr.h"
-#include "../upnpglobalvars.h"
 
 static struct mg_mgr mgr;
 
@@ -58,7 +57,7 @@ int init_redirect(void)
 {
 	bool done = false;
 	mg_mgr_init(&mgr);
-	mg_http_connect(&mgr, controller_address, onos_check_alive, &done);
+	mg_http_connect(&mgr, controller_address, OnosCheckAlive, &done);
 	while(!done) mg_mgr_poll(&mgr, 1000);
 
 	return 0;
@@ -66,16 +65,24 @@ int init_redirect(void)
 
 void shutdown_redirect(void)
 {
+	syslog(LOG_INFO, "releasing mongoose manager...");
 	mg_mgr_free(&mgr);
 	return;
 }
 
-int get_external_ip_addr(char * ret_addr, int max_len) 
+int get_sdn_igd_external_ip_addr(char * ret_addr, int max_len) 
 {
 	bool done = false;
-	mg_mgr_init(&mgr);
-	mg_http_connect(&mgr, controller_address, onos_get_ext_ip_addr, &done);
+	mg_http_connect(&mgr, controller_address, OnosGetExtIpAddr, &done);
 	while(!done) mg_mgr_poll(&mgr, 1000);
+	return 0;
+}
+
+int get_sdn_igd_wan_conn_status(void) {
+	return 0;
+}
+
+int get_sdn_igd_runtime_status(struct igd_runtime_status * data) {
 	return 0;
 }
 
@@ -184,13 +191,11 @@ addnatrule(int proto, unsigned short eport,
 
 /* add_redirect_rule2() */
 int
-add_redirect_rule2(const char * ifname,
-                   const char * rhost, unsigned short eport,
+add_redirect_rule2(const char * rhost, unsigned short eport,
                    const char * iaddr, unsigned short iport, int proto,
 				   const char * desc, unsigned int timestamp)
 {
 	int r;
-	UNUSED(ifname);
 
 	r = addnatrule(proto, eport, iaddr, iport, rhost);
 	if(r >= 0) {
@@ -215,14 +220,12 @@ addpeernatrule(int proto,
 
 /* add_peer_redirect_rule2() */
 int
-add_peer_redirect_rule2(const char * ifname,
-                   const char * rhost, unsigned short rport,
+add_peer_redirect_rule2(const char * rhost, unsigned short rport,
                    const char * eaddr, unsigned short eport,
                    const char * iaddr, unsigned short iport, int proto,
                    const char * desc, unsigned int timestamp)
 {
 	int r;
-	UNUSED(ifname);
 
 	r = addpeernatrule(proto, eaddr, eport, iaddr, iport, rhost, rport);
 	if(r >= 0)
@@ -243,14 +246,12 @@ addpeerdscprule(int proto, unsigned char dscp,
 }
 
 int
-add_peer_dscp_rule2(const char * ifname,
-                   const char * rhost, unsigned short rport,
-                   unsigned char dscp,
-                   const char * iaddr, unsigned short iport, int proto,
-                   const char * desc, unsigned int timestamp)
+add_peer_dscp_rule2(const char * rhost, unsigned short rport,
+                    unsigned char dscp, const char * iaddr, 
+					unsigned short iport, int proto,
+                    const char * desc, unsigned int timestamp)
 {
 	int r;
-	UNUSED(ifname);
 	UNUSED(desc);
 	UNUSED(timestamp);
 
@@ -270,12 +271,10 @@ add_filter_rule(int proto, const char * rhost,
 }
 
 int
-add_filter_rule2(const char * ifname,
-                 const char * rhost, const char * iaddr,
+add_filter_rule2(const char * rhost, const char * iaddr,
                  unsigned short eport, unsigned short iport,
                  int proto, const char * desc)
 {
-	UNUSED(ifname);
 	UNUSED(eport);
 	UNUSED(desc);
 
@@ -285,14 +284,14 @@ add_filter_rule2(const char * ifname,
 /* get_redirect_rule()
  * returns -1 if the rule is not found */
 int
-get_redirect_rule(const char * ifname, unsigned short eport, int proto,
+get_redirect_rule(unsigned short eport, int proto,
                   char * iaddr, int iaddrlen, unsigned short * iport,
                   char * desc, int desclen,
                   char * rhost, int rhostlen,
                   unsigned int * timestamp,
                   u_int64_t * packets, u_int64_t * bytes)
 {
-	return get_nat_redirect_rule(ifname, eport, proto,
+	return get_nat_redirect_rule(eport, proto,
 	                             iaddr, iaddrlen, iport,
 	                             desc, desclen,
 	                             rhost, rhostlen,
@@ -300,7 +299,7 @@ get_redirect_rule(const char * ifname, unsigned short eport, int proto,
 }
 
 int
-get_nat_redirect_rule(const char * ifname, unsigned short eport, int proto,
+get_nat_redirect_rule(unsigned short eport, int proto,
                   char * iaddr, int iaddrlen, unsigned short * iport,
                   char * desc, int desclen,
                   char * rhost, int rhostlen,
@@ -313,8 +312,7 @@ get_nat_redirect_rule(const char * ifname, unsigned short eport, int proto,
 /* get_redirect_rule_by_index()
  * return -1 when the rule was not found */
 int
-get_redirect_rule_by_index(int index,
-                           char * ifname, unsigned short * eport,
+get_redirect_rule_by_index(int index, unsigned short * eport,
                            char * iaddr, int iaddrlen, unsigned short * iport,
                            int * proto, char * desc, int desclen,
                            char * rhost, int rhostlen,
@@ -327,13 +325,12 @@ get_redirect_rule_by_index(int index,
 /* get_peer_rule_by_index()
  * return -1 when the rule was not found */
 int
-get_peer_rule_by_index(int index,
-                           char * ifname, unsigned short * eport,
-                           char * iaddr, int iaddrlen, unsigned short * iport,
-                           int * proto, char * desc, int desclen,
-                           char * rhost, int rhostlen, unsigned short * rport,
-                           unsigned int * timestamp,
-                           u_int64_t * packets, u_int64_t * bytes)
+get_peer_rule_by_index(int index, unsigned short * eport,
+						char * iaddr, int iaddrlen, unsigned short * iport,
+						int * proto, char * desc, int desclen,
+						char * rhost, int rhostlen, unsigned short * rport,
+						unsigned int * timestamp,
+						u_int64_t * packets, u_int64_t * bytes)
 {
 	return -1;
 }
@@ -351,7 +348,7 @@ delete_rule_and_commit(unsigned int index,
 /* delete_filter_rule()
  */
 int
-delete_filter_rule(const char * ifname, unsigned short port, int proto)
+delete_filter_rule(unsigned short port, int proto)
 {
 	return -1;
 }
@@ -374,7 +371,7 @@ get_portmappings_in_range(unsigned short startport, unsigned short endport,
 }
 
 int
-update_portmapping(const char * ifname, unsigned short eport, int proto,
+update_portmapping(unsigned short eport, int proto,
                    unsigned short iport, const char * desc,
                    unsigned int timestamp)
 {
@@ -382,9 +379,9 @@ update_portmapping(const char * ifname, unsigned short eport, int proto,
 }
 
 int
-update_portmapping_desc_timestamp(const char * ifname,
-                   unsigned short eport, int proto,
-                   const char * desc, unsigned int timestamp)
+update_portmapping_desc_timestamp(unsigned short eport,
+					int proto, const char * desc,
+					unsigned int timestamp)
 {
 	return -1;
 }

@@ -30,13 +30,13 @@ get_wan_connection_status_str(const char * ifname);
 
 #else
 int
-get_wan_connection_status();
+get_wan_connection_status(void);
 
 /**
  * return the same value as get_wan_connection_status()
  * as a C string */
 const char *
-get_wan_connection_status_str();
+get_wan_connection_status_str(void);
 #endif
 
 #endif

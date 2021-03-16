@@ -1250,9 +1250,14 @@ genEventVars(int * len, const struct serviceDesc * s)
 				break;
 #endif
 			case CONNECTIONSTATUS_MAGICALVALUE:
+#ifdef USE_SDN
+				str = strcat_str(str, len, &tmplen,
+					upnpallowedvalues[18 + get_wan_connection_status()]);
+#else
 				/* or get_wan_connection_status_str(ext_if_name) */
 				str = strcat_str(str, len, &tmplen,
-				   upnpallowedvalues[18 + get_wan_connection_status(ext_if_name)]);
+					upnpallowedvalues[18 + get_wan_connection_status(ext_if_name)]);
+#endif
 				break;
 #ifdef ENABLE_6FC_SERVICE
 			case FIREWALLENABLED_MAGICALVALUE:
@@ -1285,12 +1290,20 @@ genEventVars(int * len, const struct serviceDesc * s)
 				break;
 			case EXTERNALIPADDRESS_MAGICALVALUE:
 				/* External ip address magical value */
+#ifdef USE_SDN
+				{
+#else
 				if(use_ext_ip_addr)
 					str = strcat_str(str, len, &tmplen, use_ext_ip_addr);
 				else {
+#endif
 					struct in_addr addr;
 					char ext_ip_addr[INET_ADDRSTRLEN];
+#ifdef USE_SDN
+					if(get_sdn_igd_external_ip_addr(ext_ip_addr, INET_ADDRSTRLEN) < 0) {
+#else
 					if(getifaddr(ext_if_name, ext_ip_addr, INET_ADDRSTRLEN, &addr, NULL) < 0 || addr_is_reserved(&addr)) {
+#endif
 						str = strcat_str(str, len, &tmplen, "0.0.0.0");
 					} else {
 						str = strcat_str(str, len, &tmplen, ext_ip_addr);

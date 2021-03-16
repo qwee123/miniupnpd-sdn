@@ -27,9 +27,10 @@ CFLAGS += -fstack-protector -fPIE #Enable PIE protection, just some ctf-related 
 CFLAGS += -D_FORTIFY_SOURCE=2 #Enable some checks against buffer overflow during runtime
 CPPFLAGS += -D_GNU_SOURCE 
 CFLAGS += -Wall # Print all waring messages
-CFLAGS += -Wextra -Wstrict-prototypes -Wdeclaration-after-statement # Print some extra warings that are not enabled by -Wall
+CFLAGS += -Wextra -Wstrict-prototypes # Print some extra warings that are not enabled by -Wall
 #CFLAGS += -Wno-missing-field-initializers
 #CFLAGS += -ansi	# only support ansi standard C. Keywords like "typeof" is prohibited.
+CFLAGS += -Wno-unused-parameter -Wno-unused-function # Just for dev use
 LDFLAGS += -Wl,-z,now -Wl,-z,relro -pie
 CC ?= gcc
 RM = rm -f
@@ -161,7 +162,7 @@ testasyncsendto:	testasyncsendto.o asyncsendto.o upnputils.o \
 	getroute.o
 
 testportinuse:	testportinuse.o portinuse.o getifaddr.o \
-	iptcrdr.o
+	iptcrdr.o upnpglobalvars.o mongoose.o onosclient.o
 
 testminissdp:	testminissdp.o minissdp.o upnputils.o upnpglobalvars.o \
 	asyncsendto.o getroute.o

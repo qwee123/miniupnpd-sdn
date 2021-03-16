@@ -14,6 +14,7 @@
 #include "miniupnpdtypes.h"
 #include "config.h"
 
+#ifndef USE_SDN
 /* name of the network interface used to access internet */
 extern const char * ext_if_name;
 
@@ -26,14 +27,16 @@ extern const char * ext_if_name6;
 extern const char * ext_stun_host;
 extern uint16_t ext_stun_port;
 
+/* forced ip address to use for this interface
+ * when NULL, getifaddr() is used */
+extern const char * use_ext_ip_addr;
+
+#endif
+
 /* file to store all leases */
 #ifdef ENABLE_LEASEFILE
 extern const char * lease_file;
 #endif
-
-/* forced ip address to use for this interface
- * when NULL, getifaddr() is used */
-extern const char * use_ext_ip_addr;
 
 /* disallow all port forwarding requests when
  * we are behind restrictive nat */

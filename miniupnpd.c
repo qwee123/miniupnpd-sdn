@@ -1176,7 +1176,6 @@ init(int argc, char * * argv, struct runtime_vars * v)
 	int debug_flag = 0;
 	int verbosity_level = 0;	/* for determining setlogmask() */
 	int openlog_option;
-	struct in_addr addr;
 	struct sigaction sa;
 	/*const char * logfilename = 0;*/
 	const char * presurl = 0;
@@ -1509,7 +1508,7 @@ init(int argc, char * * argv, struct runtime_vars * v)
 			} else
 				fprintf(stderr, "Option -%c takes one argument.\n", argv[i][1]);
 			break;
-#ifndef USE_SDN:
+#ifndef USE_SDN
 		case 'o':
 			if(i+1 < argc) {
 				i++;
@@ -1795,6 +1794,7 @@ init(int argc, char * * argv, struct runtime_vars * v)
 #endif
 
 #ifndef USE_SDN
+	struct in_addr addr;
 	if (use_ext_ip_addr && GETFLAG(PERFORMSTUNMASK)) {
 		fprintf(stderr, "Error: options ext_ip= and ext_perform_stun=yes cannot be specified together\n");
 		return 1;
@@ -2206,7 +2206,9 @@ main(int argc, char * * argv)
 	       " ",
 #endif
 	       GETFLAG(ENABLEUPNPMASK) ? "UPnP-IGD " : "",
-#ifndef USE_SDN
+#ifdef USE_SDN
+		   "(no iface, sdn mode)",
+#else
 	       ext_if_name,
 #endif
 		   upnp_bootid);

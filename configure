@@ -640,8 +640,12 @@ echo " * controlled by miniupnpdctl */" >> ${CONFIGFILE}
 echo "/*#define USE_MINIUPNPDCTL*/" >> ${CONFIGFILE}
 echo "" >> ${CONFIGFILE}
 
-echo "/* Comment the following line to disable NAT-PMP operations */" >> ${CONFIGFILE}
-echo "#define ENABLE_NATPMP" >> ${CONFIGFILE}
+echo "/* Uncomment the following line to enable NAT-PMP operations */" >> ${CONFIGFILE}
+if [ -n ${FW} ] && [ "$FW" = "sdn" ]; then
+	echo "/* #define ENABLE_NATPMP */" >> ${CONFIGFILE}
+else
+	echo "#define ENABLE_NATPMP" >> ${CONFIGFILE}
+fi
 echo "" >> ${CONFIGFILE}
 
 # ENABLE_PCP is commented for simplicity for now.

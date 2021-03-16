@@ -1,10 +1,18 @@
 #ifndef ONOSCLIENT_H
 #define ONOSCLIENT_H
 
-void
-onos_check_alive(struct mg_connection *, int, void *, void *);
+#include "mongoose/mongoose.h"
+
+struct http_options {
+    const char * req_url;
+    const char * host;
+    int host_len;
+};
 
 void
-onos_get_ext_ip_addr(struct mg_connection *, int, void *, void *);
+OnosCheckAlive(struct mg_connection *, int, void *, void *);
+
+void
+OnosGetExtIpAddr(struct mg_connection *, int, void *, void *);
 
 #endif
