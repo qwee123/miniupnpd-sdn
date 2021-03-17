@@ -21,6 +21,7 @@
  */
 
 struct igd_runtime_status {
+    const char * status;
     unsigned long opackets;
 	unsigned long ipackets;
 	unsigned long obytes;

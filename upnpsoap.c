@@ -214,7 +214,6 @@ static void
 GetTotalPacketsReceived(struct upnphttp * h, const char * action, const char * ns)
 {
 	int r;
-
 	static const char resp[] =
 		"<u:%sResponse "
 		"xmlns:u=\"%s\">"
@@ -268,27 +267,28 @@ GetCommonLinkProperties(struct upnphttp * h, const char * action, const char * n
 	const char * wan_access_type = "Cable"; /* DSL, POTS, Cable, Ethernet */
 	char ext_ip_addr[INET_ADDRSTRLEN];
 
+#ifdef USE_SDN
+	if(get_sdn_igd_runtime_status(&data) >= 0) {
+		printf("%d\n", data.baudrate);
+		downstream_bitrate = data.baudrate;
+		upstream_bitrate = data.baudrate;
+		status = data.status;
+	}
+#else
 	if((downstream_bitrate == 0) || (upstream_bitrate == 0))
 	{
-#ifdef USE_SDN
-		if(get_sdn_igd_runtime_status(&data) >= 0)
-#else
 		if(getifstats(ext_if_name, &data) >= 0)
-#endif
 		{
 			if(downstream_bitrate == 0) downstream_bitrate = data.baudrate;
 			if(upstream_bitrate == 0) upstream_bitrate = data.baudrate;
 		}
 	}
-#ifdef USE_SDN
-	if(get_sdn_igd_external_ip_addr(ext_ip_addr, INET_ADDRSTRLEN) < 0) {
-		status = "Down";
-	}
-#else
+
 	if(getifaddr(ext_if_name, ext_ip_addr, INET_ADDRSTRLEN, NULL, NULL) < 0) {
 		status = "Down";
 	}
 #endif
+
 	bodylen = snprintf(body, sizeof(body), resp,
 	    action, ns, /* was "urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1" */
 	    wan_access_type,
@@ -423,6 +423,7 @@ GetExternalIPAddress(struct upnphttp * h, const char * action, const char * ns)
 		SoapError(h, 501, "Action Failed");
 		return;
 	}
+
 	bodylen = snprintf(body, sizeof(body), resp,
 	              action, ns, /*SERVICE_TYPE_WANIPC,*/
 				  ext_ip_addr, action);

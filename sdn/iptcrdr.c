@@ -23,11 +23,21 @@
 #include "../macros.h"
 #include "iptcrdr.h"
 #include "../upnpglobalvars.h"
+#include "json/json_object.h"
 
 /* IPT_ALIGN was renamed XT_ALIGN in iptables-1.4.11 */
 #ifndef IPT_ALIGN
 #define IPT_ALIGN XT_ALIGN
 #endif
+
+static const char * json_tag_ext_ip = "ext_ip_addr";
+static const char * json_tag_wan_status = "wan_status";
+static const char * json_tag_iface_status = "iface_status";
+static const char * json_tag_baudrate = "baudrate";
+static const char * json_tag_total_bytes_sent = "total_bytes_sent";
+static const char * json_tag_total_bytes_recv = "total_bytes_received";
+static const char * json_tag_total_pkt_sent = "total_packets_sent";
+static const char * json_tag_total_pkt_recv = "total_packets_received";
 
 static struct mg_mgr mgr;
 
@@ -52,6 +62,14 @@ addpeerdscprule(int proto, unsigned char dscp,
            const char * iaddr, unsigned short iport,
            const char * rhost, unsigned short rport);
 
+static bool
+retrieveStringFromJsonObj(struct json_object *jobj,
+			 const char *key, struct json_object **ret);
+
+static bool
+retrieveIntFromJsonObj(struct json_object *jobj,
+			 const char *key, struct json_object **ret);
+
 /* dummy init and shutdown functions */
 int init_redirect(void)
 {
@@ -72,9 +90,25 @@ void shutdown_redirect(void)
 
 int get_sdn_igd_external_ip_addr(char * ret_addr, int max_len) 
 {
-	bool done = false;
-	mg_http_connect(&mgr, controller_address, OnosGetExtIpAddr, &done);
-	while(!done) mg_mgr_poll(&mgr, 1000);
+	struct conn_runtime_vars data = { .done = false };
+	mg_http_connect(&mgr, controller_address, OnosGetExtIpAddr, &data);
+	
+	while(!data.done) mg_mgr_poll(&mgr, 1000);
+
+	struct json_object * jsob_ip;
+	if (!retrieveStringFromJsonObj(data.payload, json_tag_ext_ip, &jsob_ip)) 
+	{
+		syslog(LOG_WARNING, "Fail to retreive external ip address from the response of onos");
+		return -1;
+	} else {
+		if (json_object_get_string_len(jsob_ip) <= max_len) {
+			strncpy(ret_addr, json_object_get_string(jsob_ip), max_len);
+		} else {
+			syslog(LOG_WARNING, "Retrieved external ip address exceeds maximun length, invalid");
+			return -1;
+		}
+	}
+
 	return 0;
 }
 
@@ -82,7 +116,38 @@ int get_sdn_igd_wan_conn_status(void) {
 	return 0;
 }
 
-int get_sdn_igd_runtime_status(struct igd_runtime_status * data) {
+/*
+ * This function should return -1 if there is any abnormality occured during the process.
+ * Even if there is only part of data unavailable, ret_data will be entirely descarded by the outside funtions.
+ */
+int get_sdn_igd_runtime_status(struct igd_runtime_status * ret_data) 
+{
+	struct conn_runtime_vars data = { .done = false };
+	mg_http_connect(&mgr, controller_address, OnosGetIGDRuntimeStatus, &data);
+	
+	while(!data.done) mg_mgr_poll(&mgr, 1000);
+
+	struct json_object *jsob_iface_status, *jsob_baudrate, *jsob_bytes_recv \
+		, *jsob_bytes_sent, *jsob_pkt_recv, *jsob_pkt_sent;
+
+	if (!retrieveStringFromJsonObj(data.payload, json_tag_iface_status, &jsob_iface_status)
+		|| !retrieveIntFromJsonObj(data.payload, json_tag_baudrate, &jsob_baudrate)
+		|| !retrieveIntFromJsonObj(data.payload, json_tag_total_bytes_sent, &jsob_bytes_sent) 
+		|| !retrieveIntFromJsonObj(data.payload, json_tag_total_bytes_recv, &jsob_bytes_recv)
+		|| !retrieveIntFromJsonObj(data.payload, json_tag_total_pkt_sent, &jsob_pkt_sent)
+		|| !retrieveIntFromJsonObj(data.payload, json_tag_total_pkt_recv, &jsob_pkt_recv)) 
+	{
+		syslog(LOG_WARNING, "Fail to retreive igd runtime status from the response of onos");
+		return -1;
+	} else {
+		ret_data->status = json_object_get_string(jsob_iface_status);
+		ret_data->baudrate = json_object_get_int(jsob_baudrate);
+		ret_data->ibytes = json_object_get_int(jsob_bytes_recv);
+		ret_data->obytes = json_object_get_int(jsob_bytes_sent);
+		ret_data->ipackets = json_object_get_int(jsob_pkt_recv);
+		ret_data->opackets = json_object_get_int(jsob_pkt_sent);
+	}
+
 	return 0;
 }
 
@@ -384,4 +449,30 @@ update_portmapping_desc_timestamp(unsigned short eport,
 					unsigned int timestamp)
 {
 	return -1;
+}
+
+static bool
+retrieveStringFromJsonObj(struct json_object *jobj, const char *key, struct json_object **ret) {
+	if (!json_object_object_get_ex(jobj, key, ret)) {
+		syslog(LOG_WARNING, "Fail to extract %s from json object\n", key);
+		return false;
+	}
+	if (!json_object_get_type(*ret) == json_type_string) {
+		syslog(LOG_WARNING, "Retrieved %s value is not a string\n", key);
+		return false;
+	}
+    return true;
+}
+
+static bool
+retrieveIntFromJsonObj(struct json_object *jobj, const char *key, struct json_object **ret) {
+	if (!json_object_object_get_ex(jobj, key, ret)) {
+		syslog(LOG_WARNING, "Fail to extract %s from json object\n", key);
+		return false;
+	}
+	if (!json_object_get_type(*ret) == json_type_int) {
+		syslog(LOG_WARNING, "Retrieved %s value is not a int\n", key);
+		return false;
+	}
+    return true;
 }

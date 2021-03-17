@@ -39,6 +39,7 @@ STRIP ?= strip # strip unecessary information (e.g. debug info) from the file
 PKG_CONFIG ?= pkg-config
 CP = cp
 DOXYGEN ?= doxygen
+JSONBUILDPATH = sdn/json/build
 
 DEPFLAGS = -MM -MG -MT $(patsubst %.d,%.o,$@) -MT $@
 # -M : with system library(e.g. stdio) headers, -MM : without
@@ -56,7 +57,9 @@ include $(SRCDIR)/objects.mk
 
 # sources in netfilter/ directory
 #NETFILTEROBJS = iptcrdr.o iptpinhole.o nfct_get.o
+JSONLIB = $(JSONBUILDPATH)/libjson-c.a
 SDNOBJS = iptcrdr.o iptpinhole.o nfct_get.o onosclient.o mongoose.o
+LDLIBS += $(JSONLIB)
 
 ALLOBJS = $(BASEOBJS) $(LNXOBJS) $(SDNOBJS)
 
@@ -192,6 +195,9 @@ dox:	$(SRCDIR)/miniupnpd.doxyconf
 
 %.o:	$(SRCDIR)/sdn/mongoose/%.c
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
+
+$(JSONLIB):
+	cd $(JSONBUILDPATH) && make
 
 print-%:
 	@echo "$* = $($*)"
