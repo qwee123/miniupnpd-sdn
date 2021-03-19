@@ -773,7 +773,7 @@ echo "/*#define HTTPS_CERTFILE \"/path/to/certificate.pem\"*/" >> ${CONFIGFILE}
 echo "/*#define HTTPS_KEYFILE \"/path/to/private.key\"*/" >> ${CONFIGFILE}
 echo "" >> ${CONFIGFILE}
 echo "/* Enable WANIPv6FirewallControl service (IGDv2). needs IPv6 */" >> ${CONFIGFILE}
-echo "#ifdef ENABLE_IPV6" >> ${CONFIGFILE}
+echo "#ifdef ENABLE_IPV6 " >> ${CONFIGFILE}
 echo "#define ENABLE_6FC_SERVICE" >> ${CONFIGFILE}
 echo "#endif /* ENABLE_IPV6 */" >> ${CONFIGFILE}
 echo "#endif /* IGD_V2 */" >> ${CONFIGFILE}

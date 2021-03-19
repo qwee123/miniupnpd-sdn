@@ -10,6 +10,7 @@
 #define IPTCRDR_H_INCLUDED
 
 #include "../commonrdr.h"
+#include "../config.h"
 
 /* Explanation of the abv.
  * rhost: remoteHost, the (allowed) remote host(from wan) of the rule, usually is set to be a wildcard(an empty string)
@@ -20,7 +21,7 @@
  * desc: description, just some memo.
  */
 
-struct igd_runtime_status {
+struct igd_iface_status {
     const char * status;
     unsigned long opackets;
 	unsigned long ipackets;
@@ -29,10 +30,26 @@ struct igd_runtime_status {
 	unsigned long baudrate;
 };
 
+struct portmapping_entry {
+    const char * rhost;
+    unsigned short eport;
+    const char * proto;
+    const char * iaddr;
+    unsigned short iport;
+    unsigned int leaseduration;
+};
+
+int 
+add_redirect_and_filter_rules(const char * rhost, unsigned short eport, 
+					const char * iaddr, unsigned short iport,
+                    const char * proto, const char * desc,
+                    unsigned int duration);
+
 int
-add_redirect_rule2(const char * rhost, unsigned short eport,
-                   const char * iaddr, unsigned short iport, int proto,
-                   const char * desc, unsigned int timestamp);
+add_any_redirect_and_filter_rules(const char * rhost, unsigned short eport, 
+					const char * iaddr, unsigned short iport,
+                    const char * proto, const char * desc,
+                    unsigned int duration, unsigned short * ret);
 
 int
 add_peer_redirect_rule2(const char * rhost, unsigned short rport,
@@ -41,15 +58,8 @@ add_peer_redirect_rule2(const char * rhost, unsigned short rport,
                    const char * desc, unsigned int timestamp);
 
 int
-add_filter_rule2(const char * rhost, const char * iaddr,
-                 unsigned short eport, unsigned short iport,
-                 int proto, const char * desc);
-
-int
-delete_redirect_and_filter_rules(unsigned short eport, int proto);
-
-int
-delete_filter_rule(unsigned short port, int proto);
+delete_redirect_and_filter_rules(const char * rhost, unsigned short eport,
+                   const char * proto);
 
 int
 add_peer_dscp_rule2(const char * rhost, unsigned short rport,
@@ -68,26 +78,10 @@ get_peer_rule_by_index(int index, unsigned short * eport,
                         u_int64_t * packets, u_int64_t * bytes);
 
 int
-get_redirect_rule(unsigned short eport, int proto,
-                  char * iaddr, int iaddrlen, unsigned short * iport,
-                  char * desc, int desclen,
-                  char * rhost, int rhostlen,
-                  unsigned int * timestamp,
-                  u_int64_t * packets, u_int64_t * bytes);
+get_sdn_igd_external_ip_addr(char *ret_addr, size_t max_len);
 
 int
-get_nat_redirect_rule(unsigned short eport, int proto,
-                  char * iaddr, int iaddrlen, unsigned short * iport,
-                  char * desc, int desclen,
-                  char * rhost, int rhostlen,
-                  unsigned int * timestamp,
-                  u_int64_t * packets, u_int64_t * bytes);
-
-int
-get_sdn_igd_external_ip_addr(char *ret_addr, int max_len);
-
-int
-get_sdn_igd_runtime_status(struct igd_runtime_status * data);
+get_sdn_igd_iface_status(struct igd_iface_status * data);
 
 int
 get_sdn_igd_wan_conn_status(void);

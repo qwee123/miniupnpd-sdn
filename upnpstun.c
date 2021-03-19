@@ -6,7 +6,7 @@
  * (c) 2018 Pali Rohár
  * This software is subject to the conditions detailed
  * in the LICENCE file provided within the distribution */
-
+#ifdef USE_SDN
 #include <sys/select.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -26,9 +26,6 @@
 
 #include "upnputils.h"
 #include "upnpstun.h"
-#if defined(USE_SDN)
-#include "sdn/iptcrdr.h"
-#endif
 #if defined(USE_NETFILTER)
 #include "netfilter/iptcrdr.h"
 #endif
@@ -610,4 +607,5 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
+#endif
 #endif

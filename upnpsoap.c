@@ -124,8 +124,8 @@ GetTotalBytesSent(struct upnphttp * h, const char * action, const char * ns)
 	int bodylen;
 
 #ifdef USE_SDN
-	struct igd_runtime_status data;
-	r = get_sdn_igd_runtime_status(&data);
+	struct igd_iface_status data;
+	r = get_sdn_igd_iface_status(&data);
 #else
 	struct ifdata data;
 	r = getifstats(ext_if_name, &data);
@@ -156,8 +156,8 @@ GetTotalBytesReceived(struct upnphttp * h, const char * action, const char * ns)
 	int bodylen;
 
 #ifdef USE_SDN
-	struct igd_runtime_status data;
-	r = get_sdn_igd_runtime_status(&data);
+	struct igd_iface_status data;
+	r = get_sdn_igd_iface_status(&data);
 #else
 	struct ifdata data;
 	r = getifstats(ext_if_name, &data);
@@ -193,8 +193,8 @@ GetTotalPacketsSent(struct upnphttp * h, const char * action, const char * ns)
 	int bodylen;
 
 #ifdef USE_SDN
-	struct igd_runtime_status data;
-	r = get_sdn_igd_runtime_status(&data);
+	struct igd_iface_status data;
+	r = get_sdn_igd_iface_status(&data);
 #else
 	struct ifdata data;
 	r = getifstats(ext_if_name, &data);
@@ -224,8 +224,8 @@ GetTotalPacketsReceived(struct upnphttp * h, const char * action, const char * n
 	int bodylen;
 
 #ifdef USE_SDN
-	struct igd_runtime_status data;
-	r = get_sdn_igd_runtime_status(&data);
+	struct igd_iface_status data;
+	r = get_sdn_igd_iface_status(&data);
 #else
 	struct ifdata data;
 	r = getifstats(ext_if_name, &data);
@@ -258,7 +258,7 @@ GetCommonLinkProperties(struct upnphttp * h, const char * action, const char * n
 	char body[2048];
 	int bodylen;
 #ifdef USE_SDN
-	struct igd_runtime_status data;
+	struct igd_iface_status data;
 #else
 	struct ifdata data;
 #endif
@@ -268,8 +268,7 @@ GetCommonLinkProperties(struct upnphttp * h, const char * action, const char * n
 	char ext_ip_addr[INET_ADDRSTRLEN];
 
 #ifdef USE_SDN
-	if(get_sdn_igd_runtime_status(&data) >= 0) {
-		printf("%d\n", data.baudrate);
+	if(get_sdn_igd_iface_status(&data) >= 0) {
 		downstream_bitrate = data.baudrate;
 		upstream_bitrate = data.baudrate;
 		status = data.status;
@@ -575,8 +574,12 @@ AddPortMapping(struct upnphttp * h, const char * action, const char * ns)
 	       action, eport, int_ip, iport, protocol, desc, leaseduration,
 	       r_host ? r_host : "NULL");
 
+#ifdef USE_SDN
+	unsigned short ret_eport = 0; // not used in normal addportmapping
+	r = upnp_redirect(r_host, eport, int_ip, iport, protocol, desc, leaseduration, false, &ret_eport);
+#else
 	r = upnp_redirect(r_host, eport, int_ip, iport, protocol, desc, leaseduration);
-
+#endif
 	ClearNameValueList(&data);
 
 	/* possible error codes for AddPortMapping :
@@ -645,6 +648,9 @@ AddAnyPortMapping(struct upnphttp * h, const char * action, const char * ns)
 	unsigned short iport, eport;
 	const char * leaseduration_str;
 	unsigned int leaseduration;
+#ifdef USE_SDN
+	unsigned short ret_eport = 0;
+#endif
 
 	struct hostent *hp; /* getbyhostname() */
 	char ** ptr; /* getbyhostname() */
@@ -728,9 +734,13 @@ AddAnyPortMapping(struct upnphttp * h, const char * action, const char * ns)
 		}
 	}
 
+#ifdef USE_SDN
+	r = upnp_redirect(r_host, eport, int_ip, iport, protocol, desc, leaseduration, true, &ret_eport);
+#else
+	r = upnp_redirect(r_host, eport, int_ip, iport, protocol, desc, leaseduration);
+
 	/* first try the port asked in request, then
 	 * try +1, -1, +2, -2, etc. */
-	r = upnp_redirect(r_host, eport, int_ip, iport, protocol, desc, leaseduration);
 	if (r != 0 && r != -1) {
 		unsigned short eport_below, eport_above;
 		struct in_addr address;
@@ -766,7 +776,7 @@ AddAnyPortMapping(struct upnphttp * h, const char * action, const char * ns)
 			 * continue */
 		}
 	}
-
+#endif
 	ClearNameValueList(&data);
 
 	switch(r)
@@ -777,12 +787,22 @@ AddAnyPortMapping(struct upnphttp * h, const char * action, const char * ns)
 	case 0:	/* success */
 		bodylen = snprintf(body, sizeof(body), resp,
 		              action, ns, /*SERVICE_TYPE_WANIPC,*/
-					  eport, action);
+#ifdef USE_SDN
+					  ret_eport,
+#else
+					  eport,
+#endif
+					  action);
 		BuildSendAndCloseSoapResp(h, body, bodylen);
 		break;
+#ifndef USE_SDN
+	/* Err 718 is not listed on the IGDV2 spec.. and I think this could be replaced
+     * by the 728 or success
+	 */
 	case -2:	/* already redirected */
 		SoapError(h, 718, "ConflictInMappingEntry");
 		break;
+#endif
 	case -3:	/* not permitted */
 		SoapError(h, 606, "Action not authorized");
 		break;
@@ -820,7 +840,7 @@ GetSpecificPortMappingEntry(struct upnphttp * h, const char * action, const char
 	ext_port = GetValueFromNameValueList(&data, "NewExternalPort");
 	protocol = GetValueFromNameValueList(&data, "NewProtocol");
 
-#ifdef UPNP_STRICT
+#if defined(UPNP_STRICT) || defined(USE_SDN)
 	if(!ext_port || !protocol || !r_host)
 #else
 	if(!ext_port || !protocol)
@@ -853,10 +873,14 @@ GetSpecificPortMappingEntry(struct upnphttp * h, const char * action, const char
 	 * We prevent several Port Mapping with same external port
 	 * but different remoteHost to be set up, so that is not
 	 * a priority. */
-	r = upnp_get_redirection_infos(eport, protocol, &iport,
+	r = upnp_get_redirection_infos( eport, protocol, &iport,
 	                               int_ip, sizeof(int_ip),
 	                               desc, sizeof(desc),
+#ifdef USE_SDN
+								   r_host, strlen(r_host),
+#else
 	                               NULL, 0,
+#endif
 	                               &leaseduration);
 
 	if(r < 0)
@@ -898,18 +922,18 @@ DeletePortMapping(struct upnphttp * h, const char * action, const char * ns)
 	struct NameValueParserData data;
 	const char * ext_port, * protocol;
 	unsigned short eport;
-#ifdef UPNP_STRICT
+#if defined(UPNP_STRICT) || defined(USE_SDN)
 	const char * r_host;
 #endif /* UPNP_STRICT */
 
 	ParseNameValue(h->req_buf + h->req_contentoff, h->req_contentlen, &data);
 	ext_port = GetValueFromNameValueList(&data, "NewExternalPort");
 	protocol = GetValueFromNameValueList(&data, "NewProtocol");
-#ifdef UPNP_STRICT
+#if defined(UPNP_STRICT) || defined(USE_SDN)
 	r_host = GetValueFromNameValueList(&data, "NewRemoteHost");
 #endif /* UPNP_STRICT */
 
-#ifdef UPNP_STRICT
+#if defined(UPNP_STRICT) || defined(USE_SDN)
 	if(!ext_port || !protocol || !r_host)
 #else
 	if(!ext_port || !protocol)
@@ -920,7 +944,7 @@ DeletePortMapping(struct upnphttp * h, const char * action, const char * ns)
 		return;
 	}
 #ifndef SUPPORT_REMOTEHOST
-#ifdef UPNP_STRICT
+#if defined(UPNP_STRICT)
 	if (r_host && (r_host[0] != '\0') && (0 != strcmp(r_host, "*")))
 	{
 		ClearNameValueList(&data);
@@ -970,8 +994,11 @@ DeletePortMapping(struct upnphttp * h, const char * action, const char * ns)
 		}
 	}
 
+#ifdef USE_SDN
+	r = upnp_delete_redirection(r_host, eport, protocol);
+#else
 	r = upnp_delete_redirection(eport, protocol);
-
+#endif
 	if(r < 0)
 	{
 		SoapError(h, 714, "NoSuchEntryInArray");
@@ -1006,8 +1033,13 @@ DeletePortMappingRange(struct upnphttp * h, const char * action, const char * ns
 	const char * startport_s, * endport_s;
 	unsigned short startport, endport;
 	/*int manage;*/
-	unsigned short * port_list;
-	unsigned int i, number = 0;
+#ifdef USE_SDN
+	unsigned short * success_list = NULL, * fail_list = NULL;
+	unsigned int slist_size = 0, flist_size = 0;
+#else
+	unsigned short * entry_list;
+	unsigned int list_size = 0;
+#endif
 
 	ParseNameValue(h->req_buf + h->req_contentoff, h->req_contentlen, &data);
 	startport_s = GetValueFromNameValueList(&data, "NewStartPort");
@@ -1037,24 +1069,60 @@ DeletePortMappingRange(struct upnphttp * h, const char * action, const char * ns
 
 	syslog(LOG_INFO, "%s: deleting external ports: %hu-%hu, protocol: %s",
 	       action, startport, endport, protocol);
+	
+#ifdef USE_SDN;
+	r = upnp_delete_portmappings_in_range(startport, endport, protocol,
+						&success_list, &slist_size, &fail_list, &flist_size);
 
-	port_list = upnp_get_portmappings_in_range(startport, endport,
-	                                           protocol, &number);
-	if(number == 0)
+	if(r < 0 || (slist_size == 0 && flist_size == 0))
 	{
 		SoapError(h, 730, "PortMappingNotFound");
 		ClearNameValueList(&data);
-		free(port_list);
+		if (success_list != NULL)
+			printf("qwe\n");
+			free(success_list);
+		if (fail_list)
+			free(fail_list);
 		return;
 	}
 
-	for(i = 0; i < number; i++)
+	for(unsigned int i = 0; i < slist_size; i++)
 	{
-		r = upnp_delete_redirection(port_list[i], protocol);
-		syslog(LOG_INFO, "%s: deleting external port: %hu, protocol: %s: %s",
-		       action, port_list[i], protocol, r < 0 ? "failed" : "ok");
+		syslog(LOG_INFO, "%s: deleting external port: %hu, protocol: %s: success",
+		       action, success_list[i], protocol);
 	}
-	free(port_list);
+
+	for(unsigned int i = 0; i < flist_size; i++)
+	{
+		syslog(LOG_INFO, "%s: deleting external port: %hu, protocol: %s: fail",
+		       action, fail_list[i], protocol);
+	}
+
+	if (success_list)
+		free(success_list);
+	if (fail_list)
+		free(fail_list);
+#else
+	entry_list = upnp_get_portmappings_in_range(startport, endport,
+	                                           protocol, &list_size);
+
+	if(list_size == 0)
+	{
+		SoapError(h, 730, "PortMappingNotFound");
+		ClearNameValueList(&data);
+		free(entry_list);
+		return;
+	}
+
+	for(unsigned int i = 0; i < list_size; i++)
+	{
+		r = upnp_delete_redirection(entry_list[i], protocol);
+		syslog(LOG_INFO, "%s: deleting external port: %hu, protocol: %s: %s",
+		       action, entry_list[i], protocol, r < 0 ? "failed" : "ok");
+	}
+	free(entry_list);
+#endif
+
 	bodylen = snprintf(body, sizeof(body), resp,
 	                   action, ns, action);
 	BuildSendAndCloseSoapResp(h, body, bodylen);
@@ -1143,7 +1211,18 @@ GetGenericPortMappingEntry(struct upnphttp * h, const char * action, const char 
 	ClearNameValueList(&data);
 }
 
-/* GetListOfPortMappings was added in the IGD v2 specification */
+/* GetListOfPortMappings was added in the IGD v2 specification 
+ * 
+ * Explanation for SDN version:
+ * Original method of miniupnpd retrieves a list of portmapping ports first, then
+ * according to the previous result, retrieve each port's info seperatly.
+ * After some observation of the code, it appears that these two actions always invoked 
+ * by the program continuously. Thus, in sdn mode, I combine the two methods into one to reduce
+ * some traffic load between miniupnpd and onos.
+ * However, if there is any action of upnp-igd which only needs to retrieve the list of 
+ * portmapping ports, a designated method(like the original one) for that will be neccessary again.
+ * (But there is no such action in IGDv1/2 for now.) 
+ */
 static void
 GetListOfPortMappings(struct upnphttp * h, const char * action, const char * ns)
 {
@@ -1193,7 +1272,11 @@ GetListOfPortMappings(struct upnphttp * h, const char * action, const char * ns)
 	/*int manage;*/
 	const char * number_s;
 	int number;
-	unsigned short * port_list;
+#ifdef USE_SDN
+	struct portmapping_entry * entry_list;
+#else
+	unsigned short * entry_list;
+#endif
 	unsigned int i, list_size = 0;
 
 	ParseNameValue(h->req_buf + h->req_contentoff, h->req_contentlen, &data);
@@ -1250,18 +1333,19 @@ http://www.upnp.org/schemas/gw/WANIPConnection-v2.xsd">
 		return;
 	}
 	bodylen = snprintf(body, bodyalloc, resp_start,
-	              action, ns/*SERVICE_TYPE_WANIPC*/);
+	              action, ns/*SERVICE_TYPE_WANIPC*/); //Fill in resp_start and copy the content to body
 	if(bodylen < 0)
 	{
 		SoapError(h, 501, "ActionFailed");
 		free(body);
 		return;
 	}
-	memcpy(body+bodylen, list_start, sizeof(list_start));
+	memcpy(body+bodylen, list_start, sizeof(list_start)); // append list_start after the resp_start
 	bodylen += (sizeof(list_start) - 1);
 
-	port_list = upnp_get_portmappings_in_range(startport, endport,
+	entry_list = upnp_get_portmappings_in_range(startport, endport,
 	                                           protocol, &list_size);
+
 	/* loop through port mappings */
 	for(i = 0; number > 0 && i < list_size; i++)
 	{
@@ -1277,26 +1361,31 @@ http://www.upnp.org/schemas/gw/WANIPConnection-v2.xsd">
 				ClearNameValueList(&data);
 				SoapError(h, 501, "ActionFailed");
 				free(body_sav);
-				free(port_list);
+				free(entry_list);
 				return;
 			}
 		}
+#ifndef USE_SDN		
 		rhost[0] = '\0';
-		r = upnp_get_redirection_infos(port_list[i], protocol, &iport,
+		r = upnp_get_redirection_infos(entry_list[i], protocol, &iport,
 		                               int_ip, sizeof(int_ip),
 		                               desc, sizeof(desc),
 		                               rhost, sizeof(rhost),
 		                               &leaseduration);
 		if(r == 0)
+#endif
 		{
+			
 			bodylen += snprintf(body+bodylen, bodyalloc-bodylen, entry,
-			                    rhost, port_list[i], protocol,
-			                    iport, int_ip, desc, leaseduration);
+			                    entry_list[i].rhost, entry_list[i].eport, 
+								entry_list[i].proto, entry_list[i].iport,
+								entry_list[i].iaddr, "", entry_list[i].leaseduration);
 			number--;
 		}
 	}
-	free(port_list);
-	port_list = NULL;
+
+	free(entry_list);
+	entry_list = NULL;
 
 	if((bodylen + sizeof(list_end) + 1024) > bodyalloc)
 	{
@@ -2321,14 +2410,14 @@ soapMethods[] =
 	{ "GetTotalPacketsSent", GetTotalPacketsSent},
 	{ "GetTotalPacketsReceived", GetTotalPacketsReceived},
 	{ "GetCommonLinkProperties", GetCommonLinkProperties},
-	{ "GetStatusInfo", GetStatusInfo},
 	/* WANIPConnection */
+	{ "GetStatusInfo", GetStatusInfo},
 	{ "GetConnectionTypeInfo", GetConnectionTypeInfo },
 	{ "GetNATRSIPStatus", GetNATRSIPStatus},
 	{ "GetExternalIPAddress", GetExternalIPAddress},
 	{ "AddPortMapping", AddPortMapping},
 	{ "DeletePortMapping", DeletePortMapping},
-	{ "GetGenericPortMappingEntry", GetGenericPortMappingEntry},
+	{ "GetGenericPortMappingEntry", GetGenericPortMappingEntry}, //
 	{ "GetSpecificPortMappingEntry", GetSpecificPortMappingEntry},
 /* Required in WANIPConnection:2 */
 	{ "SetConnectionType", SetConnectionType},

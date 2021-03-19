@@ -9,6 +9,8 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include "getconnstatus.h"
+#include "config.h"
+
 #ifdef USE_SDN
 #include "sdn/iptcrdr.h"
 #else
@@ -43,7 +45,7 @@ get_wan_connection_status(
 	/* we need a better implementation here.
 	 * I'm afraid it should be device specific */
 #ifdef USE_SDN
-	r = get_sdn_wan_connection_status();
+	r = get_sdn_igd_wan_conn_status();
 #else
 	char addr[INET_ADDRSTRLEN];
 	r = getifaddr(ifname, addr, INET_ADDRSTRLEN, NULL, NULL);

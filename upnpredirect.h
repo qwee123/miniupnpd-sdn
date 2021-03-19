@@ -14,6 +14,10 @@
 
 #include "config.h"
 
+#ifdef USE_SDN
+#include <stdbool.h>
+#endif
+
 #ifdef ENABLE_LEASEFILE
 int reload_from_lease_file(void);
 #ifdef LEASEFILE_USE_REMAINING_TIME
@@ -33,15 +37,30 @@ int
 upnp_redirect(const char * rhost, unsigned short eport,
               const char * iaddr, unsigned short iport,
               const char * protocol, const char * desc,
-              unsigned int leaseduration);
+              unsigned int leaseduration
+#ifdef USE_SDN
+			  , bool automode, unsigned short * ret_eport
+#endif
+            );
 
 /* upnp_redirect_internal()
  * same as upnp_redirect() without any check */
 int
 upnp_redirect_internal(const char * rhost, unsigned short eport,
                        const char * iaddr, unsigned short iport,
-                       int proto, const char * desc,
-                       unsigned int timestamp);
+#ifdef USE_SDN
+					   const char * proto,
+#else
+                       int proto,
+#endif 
+                        const char * desc,
+#ifdef USE_SDN
+					   unsigned int leaseduration, bool automode,
+                       unsigned short * ret_eport
+#else
+                       unsigned int timestamp
+#endif
+                    );
 
 /* upnp_get_redirection_infos()
  * returns : 0 on success
@@ -69,12 +88,22 @@ upnp_get_redirection_infos_by_index(int index,
  * returns: 0 on success
  *          -1 on failure*/
 int
-upnp_delete_redirection(unsigned short eport, const char * protocol);
+upnp_delete_redirection(
+#ifdef USE_SDN
+    const char * rhost,
+#endif
+    unsigned short eport, const char * protocol);
 
 /* _upnp_delete_redir()
  * same as above */
 int
-_upnp_delete_redir(unsigned short eport, int proto);
+_upnp_delete_redir(unsigned short eport, 
+#ifdef USE_SDN
+                const char * rhost, const char * proto
+#else
+                int proto
+#endif
+                );
 
 /* Periodic cleanup functions
  */
@@ -106,11 +135,24 @@ remove_unused_rules(struct rule_state * list);
 /* upnp_get_portmappings_in_range()
  * return a list of all "external" ports for which a port
  * mapping exists */
+#ifdef USE_SDN
+struct portmapping_entry *
+#else
 unsigned short *
+#endif
 upnp_get_portmappings_in_range(unsigned short startport,
                                unsigned short endport,
                                const char * protocol,
                                unsigned int * number);
+
+#ifdef USE_SDN
+int
+upnp_delete_portmappings_in_range(unsigned short startport,
+                               unsigned short endport,
+                               const char * protocol,
+                               unsigned short ** success_list, unsigned int * slist_number,
+							   unsigned short ** fail_list, unsigned int * flist_number);
+#endif
 
 /* stuff for responding to miniupnpdctl */
 #ifdef USE_MINIUPNPDCTL

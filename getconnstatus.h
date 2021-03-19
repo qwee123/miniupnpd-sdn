@@ -8,6 +8,8 @@
 #ifndef GETCONNSTATUS_H_INCLUDED
 #define GETCONNSTATUS_H_INCLUDED
 
+#include "config.h"
+
 /**
  * get the connection status
  * return values :
@@ -18,7 +20,19 @@
  *  4 - Disconnecting
  *  5 - Disconnected */
 
-#ifndef USE_SDN
+#ifdef USE_SDN
+
+int
+get_wan_connection_status(void);
+
+/**
+ * return the same value as get_wan_connection_status()
+ * as a C string */
+const char *
+get_wan_connection_status_str(void);
+
+#else
+
 int
 get_wan_connection_status(const char * ifname);
 
@@ -28,16 +42,6 @@ get_wan_connection_status(const char * ifname);
 const char *
 get_wan_connection_status_str(const char * ifname);
 
-#else
-int
-get_wan_connection_status(void);
-
-/**
- * return the same value as get_wan_connection_status()
- * as a C string */
-const char *
-get_wan_connection_status_str(void);
 #endif
 
 #endif
-
