@@ -1193,6 +1193,8 @@ GetGenericPortMappingEntry(struct upnphttp * h, const char * action, const char 
 	                                        rhost, sizeof(rhost),
 	                                        &leaseduration);
 
+	printf("%s:%s\n", protocol, desc);
+
 	if(r < 0)
 	{
 		SoapError(h, 713, "SpecifiedArrayIndexInvalid");
@@ -1203,7 +1205,7 @@ GetGenericPortMappingEntry(struct upnphttp * h, const char * action, const char 
 		char body[2048];
 		bodylen = snprintf(body, sizeof(body), resp,
 			action, ns, /*SERVICE_TYPE_WANIPC,*/ rhost,
-			(unsigned int)eport, protocol, (unsigned int)iport, iaddr, desc,
+			eport, protocol, iport, iaddr, desc,
 		    leaseduration, action);
 		BuildSendAndCloseSoapResp(h, body, bodylen);
 	}

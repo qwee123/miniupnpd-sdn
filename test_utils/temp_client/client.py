@@ -10,7 +10,7 @@ service2 = device['WANCommonIFC1']
 
 print("Tests for service WANIPConn1: ")
 print(*(service.get_actions()), sep="\n")
-'''
+
 print("GetListOfPortMappings", service.GetListOfPortMappings(
     NewStartPort=20,
     NewEndPort=36,
@@ -18,7 +18,6 @@ print("GetListOfPortMappings", service.GetListOfPortMappings(
     NewManage=False,
     NewNumberOfPorts=20
 ))
-
 
 print("DeletePortMappingRange", service.DeletePortMappingRange(
     NewStartPort=20,
@@ -47,7 +46,7 @@ print("GetSpecificPortMappingEntry: ", service.GetSpecificPortMappingEntry(
     NewExternalPort=5642,
     NewProtocol="udp"
 ))
-'''
+
 print("GetGenericPortMappingEntry: ", service.GetGenericPortMappingEntry(
     NewPortMappingIndex=3
 ))
@@ -62,7 +61,7 @@ print("AddPortMapping: ", service.AddPortMapping(
     NewPortMappingDescription="",
     NewLeaseDuration=500000
 ))
-'''
+
 print("GetExternalIPAddress: ", service.GetExternalIPAddress())
 print("GetConnectionTypeInfo: ", service.GetConnectionTypeInfo())
 print("GetStatusInfo: ", service.GetStatusInfo())
@@ -75,4 +74,3 @@ print("GetTotalBytesSent: ", service2.GetTotalBytesSent())
 print("GetTotalBytesReceived: ", service2.GetTotalBytesReceived())
 print("GetTotalPacketsSent: ", service2.GetTotalPacketsSent())
 print("GetTotalPacketsReceived: ", service2.GetTotalPacketsReceived())
-'''

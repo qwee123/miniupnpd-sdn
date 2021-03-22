@@ -506,8 +506,9 @@ get_redirect_rule_by_index(int index, unsigned short * eport,
 	};
 
 	mg_http_connect(&mgr, controller_address, OnosGetIGDPortMappingByIndex, &data);
+	
+	while(!data.done) mg_mgr_poll(&mgr, 1000);
 
-	printf("---\n%s\n---\n", json_object_to_json_string(data.payload));
 	const char * rhost_new, * proto_new, * iaddr_new;
 	if (!retrieveStringFromJsonObj(data.payload, json_tag_rhost, &rhost_new))
 	{
@@ -542,10 +543,11 @@ get_redirect_rule_by_index(int index, unsigned short * eport,
 		return -1;
 	}
 
-	strncpy(proto, proto_new, strlen(proto_new));
+	strncpy(proto, proto_new, strlen(proto_new) + 1); // plus one to include the '\0' symbol
 	strncpy(rhost, rhost_new, rhostlen);
 	strncpy(iaddr, iaddr_new, iaddrlen);
 	strncpy(desc, "empty", desclen);
+	
 	return 0;
 }
 
@@ -642,11 +644,6 @@ get_portmappings_in_range(unsigned short startport, unsigned short endport,
 		return NULL;
 	}
 
-	for(int i = 0;i < *number;i++) {
-		printf("eport: %u\nrhost: %s\nproto: %s\niaddr: %s\niport: %u\nlease: %u\n------------\n"
-			, array[i].eport, array[i].rhost, array[i].proto, array[i].iaddr
-			, array[i].iport, array[i].leaseduration);
-	}
 	return array;
 }
 
@@ -677,7 +674,7 @@ delete_portmappings_in_range(unsigned short startport,
 	};
 
 	mg_http_connect(&mgr, controller_address, OnosDeleteIGDPortMappingRange, &data);
-	
+
 	while(!data.done) mg_mgr_poll(&mgr, 1000);
 
 	if (!retrievePortNumberArrayFromJsonObj(data.payload, json_tag_success, success_list, slist_number)) {
@@ -724,6 +721,7 @@ retrieveStringFromJsonObj(struct json_object *jobj, const char *key, char ** ret
 	}
 
 	*ret = json_object_get_string(tmp);
+	(*ret)[json_object_get_string_len(tmp)] = '\0';
     return true;
 }
 

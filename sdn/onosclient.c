@@ -219,7 +219,6 @@ void OnosGetIGDPortMappingByIndex(struct mg_connection *c, int ev, void *ev_data
         options.req_url = uri_portmapping_index;
         options.host = host.ptr;
         options.host_len = host.len;
-        printf("send\n");
 
         sendGetRequest(c, &options);
     } else if (ev == MG_EV_HTTP_MSG) {
@@ -261,7 +260,6 @@ void OnosGetIGDPortMapping(struct mg_connection *c, int ev, void *ev_data, void 
 
 void OnosGetIGDPortMappingRange(struct mg_connection *c, int ev, void *ev_data, void *fn_data) {
     struct conn_runtime_vars * data = (struct conn_runtime_vars *) fn_data;
-
     if (ev == MG_EV_CONNECT) {
 
         struct mg_str host;
