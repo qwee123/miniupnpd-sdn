@@ -59,7 +59,6 @@ include $(SRCDIR)/objects.mk
 #NETFILTEROBJS = iptcrdr.o iptpinhole.o nfct_get.o
 JSONLIB = $(JSONBUILDPATH)/libjson-c.a
 SDNOBJS = iptcrdr.o iptpinhole.o nfct_get.o onosclient.o mongoose.o
-LDLIBS += $(JSONLIB)
 
 ALLOBJS = $(BASEOBJS) $(LNXOBJS) $(SDNOBJS)
 
@@ -147,7 +146,7 @@ miniupnpd.conf:	$(SRCDIR)/miniupnpd.conf
 
 include $(SRCDIR)/check.mk
 
-miniupnpd:	$(BASEOBJS) $(LNXOBJS) $(SDNOBJS)
+miniupnpd:	$(BASEOBJS) $(LNXOBJS) $(SDNOBJS) $(JSONLIB)
 
 testupnpdescgen:	$(TESTUPNPDESCGENOBJS)
 
@@ -197,7 +196,7 @@ dox:	$(SRCDIR)/miniupnpd.doxyconf
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
 $(JSONLIB):
-	cd $(JSONBUILDPATH) && make
+	cd $(JSONBUILDPATH) && cmake .. && make
 
 print-%:
 	@echo "$* = $($*)"
