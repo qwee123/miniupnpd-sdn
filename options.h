@@ -16,6 +16,7 @@
 /* enum of option available in the miniupnpd.conf */
 enum upnpconfigoptions {
 	UPNP_INVALID = 0,
+#ifndef USE_SDN
 	UPNPEXT_IFNAME = 1,		/* ext_ifname */
 #ifdef ENABLE_IPV6
 	UPNPEXT_IFNAME6,		/* ext_ifname6 */
@@ -24,6 +25,7 @@ enum upnpconfigoptions {
 	UPNPEXT_PERFORM_STUN,		/* ext_perform_stun */
 	UPNPEXT_STUN_HOST,		/* ext_stun_host */
 	UPNPEXT_STUN_PORT,		/* ext_stun_port */
+#endif
 	UPNPLISTENING_IP,		/* listening_ip */
 #ifdef ENABLE_IPV6
 	UPNPIPV6_LISTENING_IP,		/* listening address for IPv6 */
@@ -77,7 +79,10 @@ enum upnpconfigoptions {
 #ifdef IGD_V2
 	UPNPFORCEIGDDESCV1,
 #endif
-	UPNPENABLE				/* enable_upnp */
+	UPNPENABLE,				/* enable_upnp */
+#ifdef USE_SDN
+	UPNPCONTROLLERADDR      /* sdn controller address */
+#endif        
 };
 
 /* readoptionsfile()

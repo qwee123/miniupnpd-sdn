@@ -86,7 +86,7 @@
 #define PCP_MAX_LEN 32
 #endif
 #endif
-#include "commonrdr.h"
+#include "commonrdr.h" //abrev. of common redirect?
 #include "upnputils.h"
 #ifdef USE_IFACEWATCHER
 #include "ifacewatcher.h"
@@ -474,7 +474,7 @@ ProcessIncomingHTTP(int shttpl, const char * protocol)
 #ifdef DEBUG
 		syslog(LOG_DEBUG, "%s connection from %s", protocol, addr_str);
 #endif /* DEBUG */
-		if(get_lan_for_peer((struct sockaddr *)&clientname) == NULL)
+		if(get_lan_for_peer((struct sockaddr *)&clientname) == NULL && 0) /* $qwe$ */
 		{
 			/* The peer is not a LAN ! */
 			syslog(LOG_WARNING,
@@ -892,7 +892,7 @@ set_startup_time(void)
 struct runtime_vars {
 	/* LAN IP addresses for SSDP traffic and HTTP */
 	/* moved to global vars */
-	int port;	/* HTTP Port */
+	int port;	/* HTTP Port, default is 0, auto-select */
 #ifdef ENABLE_HTTPS
 	int https_port;	/* HTTPS Port */
 #endif
@@ -953,13 +953,13 @@ parselanaddr(struct lan_addr_s * lan_addr, const char * str)
 		if(!inet_aton(lan_addr->str, &lan_addr->addr))
 			goto parselan_error;
 	}
-	if(!addr_is_reserved(&lan_addr->addr)) {
+	/*if(!addr_is_reserved(&lan_addr->addr)) {
 		fprintf(stderr, "Error: LAN address contains public IP address : %s\n", lan_addr->str);
 		fprintf(stderr, "Public IP address can be configured via ext_ip= option\n");
 		fprintf(stderr, "LAN address should contain private address, e.g. from 192.168. block\n");
 		fprintf(stderr, "Listening on public IP address is a security issue\n");
 		return -1;
-	}
+	}*/  //commented for docker environ's testing
 	if(*p == '/')
 	{
 		const char * q = ++p;
@@ -1072,6 +1072,7 @@ parselan_error:
 	return -1;
 }
 
+#ifndef USE_SDN
 static char ext_addr_str[INET_ADDRSTRLEN];
 
 int update_ext_ip_addr_from_stun(int init)
@@ -1120,6 +1121,8 @@ int update_ext_ip_addr_from_stun(int init)
 	return 0;
 }
 
+#endif
+
 /* fill uuidvalue_wan and uuidvalue_wcd based on uuidvalue_igd */
 void complete_uuidvalues(void)
 {
@@ -1160,7 +1163,9 @@ void complete_uuidvalues(void)
  * 8) set signal handlers
  * 9) init random generator (srandom())
  * 10) init redirection engine
- * 11) reload mapping from leasefile */
+ * 11) reload mapping from leasefile 
+ * Search "Step (x)" in code to jump to the related section quickly 
+ * e.g. "Step (1)"*/
 static int
 init(int argc, char * * argv, struct runtime_vars * v)
 {
@@ -1171,7 +1176,6 @@ init(int argc, char * * argv, struct runtime_vars * v)
 	int debug_flag = 0;
 	int verbosity_level = 0;	/* for determining setlogmask() */
 	int openlog_option;
-	struct in_addr addr;
 	struct sigaction sa;
 	/*const char * logfilename = 0;*/
 	const char * presurl = 0;
@@ -1188,6 +1192,9 @@ init(int argc, char * * argv, struct runtime_vars * v)
 		if(0 == strcmp(argv[i], "-h") || 0 == strcmp(argv[i], "--help"))
 			goto print_usage;
 	}
+
+	/* Step (1) Read configuration file---------------------------------------------------------- */
+
 #ifndef DISABLE_CONFIG_FILE
 	/* first check if "-f" option is used */
 	for(i=2; i<argc; i++)
@@ -1226,10 +1233,12 @@ init(int argc, char * * argv, struct runtime_vars * v)
 	}
 	else
 	{
+		// num_options, ary_options are global variables from options.c
 		for(i=0; i<(int)num_options; i++)
 		{
 			switch(ary_options[i].id)
 			{
+#ifndef USE_SDN //ext_if_name and ip_addr will be configured during init_redirect process when sdn is enabled.
 			case UPNPEXT_IFNAME:
 				ext_if_name = ary_options[i].value;
 				break;
@@ -1251,6 +1260,7 @@ init(int argc, char * * argv, struct runtime_vars * v)
 			case UPNPEXT_STUN_PORT:
 				ext_stun_port = atoi(ary_options[i].value);
 				break;
+#endif
 			case UPNPLISTENING_IP:
 				lan_addr = (struct lan_addr_s *) malloc(sizeof(struct lan_addr_s));
 				if (lan_addr == NULL)
@@ -1438,6 +1448,11 @@ init(int argc, char * * argv, struct runtime_vars * v)
 				}
 				break;
 #endif
+#ifdef USE_SDN
+			case UPNPCONTROLLERADDR:
+				controller_address = ary_options[i].value;
+				break;
+#endif /* USE_SDN */
 			default:
 				fprintf(stderr, "Unknown option in file %s\n",
 				        optionsfile);
@@ -1451,14 +1466,17 @@ init(int argc, char * * argv, struct runtime_vars * v)
 			return 1;
 		}
 #endif	/* ENABLE_PCP */
+#ifndef USE_SDN
 		if (GETFLAG(PERFORMSTUNMASK) && !ext_stun_host) {
 			fprintf(stderr, "You must specify ext_stun_host= when ext_perform_stun=yes\n");
 			return 1;
 		}
+#endif
 	}
 #endif /* DISABLE_CONFIG_FILE */
 
-	/* command line arguments processing */
+	/* Step (2) read command line arguments---------------------------------------------------------- */
+
 	for(i=1; i<argc; i++)
 	{
 		if(argv[i][0]!='-')
@@ -1490,6 +1508,7 @@ init(int argc, char * * argv, struct runtime_vars * v)
 			} else
 				fprintf(stderr, "Option -%c takes one argument.\n", argv[i][1]);
 			break;
+#ifndef USE_SDN
 		case 'o':
 			if(i+1 < argc) {
 				i++;
@@ -1507,6 +1526,21 @@ init(int argc, char * * argv, struct runtime_vars * v)
 			} else
 				fprintf(stderr, "Option -%c takes one argument.\n", argv[i][1]);
 			break;
+		case 'i':
+			if(i+1 < argc)
+				ext_if_name = argv[++i];
+			else
+				fprintf(stderr, "Option -%c takes one argument.\n", argv[i][1]);
+			break;
+#ifdef ENABLE_IPV6
+		case 'I':
+			if(i+1 < argc)
+				ext_if_name6 = argv[++i];
+			else
+				fprintf(stderr, "Option -%c takes one argument.\n", argv[i][1]);
+			break;
+#endif
+#endif
 		case 't':
 			if(i+1 < argc)
 				v->notify_interval = atoi(argv[++i]);
@@ -1571,20 +1605,6 @@ init(int argc, char * * argv, struct runtime_vars * v)
 		case 'S':
 			SETFLAG(SECUREMODEMASK);
 			break;
-		case 'i':
-			if(i+1 < argc)
-				ext_if_name = argv[++i];
-			else
-				fprintf(stderr, "Option -%c takes one argument.\n", argv[i][1]);
-			break;
-#ifdef ENABLE_IPV6
-		case 'I':
-			if(i+1 < argc)
-				ext_if_name6 = argv[++i];
-			else
-				fprintf(stderr, "Option -%c takes one argument.\n", argv[i][1]);
-			break;
-#endif
 #ifdef USE_PF
 		case 'q':
 			if(i+1 < argc)
@@ -1758,7 +1778,11 @@ init(int argc, char * * argv, struct runtime_vars * v)
 			fprintf(stderr, "Unknown option: %s\n", argv[i]);
 		}
 	}
-	if(!ext_if_name || !lan_addrs.lh_first) {
+	if(
+#ifndef USE_SDN
+		!ext_if_name || 
+#endif
+		!lan_addrs.lh_first) {
 		/* bad configuration */
 		goto print_usage;
 	}
@@ -1769,6 +1793,8 @@ init(int argc, char * * argv, struct runtime_vars * v)
 		ext_if_name6 = ext_if_name;
 #endif
 
+#ifndef USE_SDN
+	struct in_addr addr;
 	if (use_ext_ip_addr && GETFLAG(PERFORMSTUNMASK)) {
 		fprintf(stderr, "Error: options ext_ip= and ext_perform_stun=yes cannot be specified together\n");
 		return 1;
@@ -1784,25 +1810,28 @@ init(int argc, char * * argv, struct runtime_vars * v)
 			return 1;
 		}
 	}
+#endif
 
+	/* Step (3) daemonize---------------------------------------------------------- */
 #ifndef NO_BACKGROUND_NO_PIDFILE
 	if(debug_flag)
 	{
 		pid = getpid();
 	}
-	else
-	{
+	else 	//Use system provided daemon function or author-made(miniupnpd's author) one.
+	{		//Either way, the function will fork and terminate the parent process, so the returned pid is child's.
 #ifdef USE_DAEMON
 		if(daemon(0, 0)<0) {
 			perror("daemon()");
 		}
 		pid = getpid();
-#else
+#else 
 		pid = daemonize();
 #endif
 	}
 #endif
 
+	/* Step (4) open syslog---------------------------------------------------------- */
 	openlog_option = LOG_PID|LOG_CONS;
 	if(debug_flag)
 	{
@@ -1828,6 +1857,7 @@ init(int argc, char * * argv, struct runtime_vars * v)
 		}
 	}
 
+	/* Step (5) check and write pid file---------------------------------------------------------- */
 #ifndef NO_BACKGROUND_NO_PIDFILE
 	if(checkforrunning(pidfilename) < 0)
 	{
@@ -1840,9 +1870,10 @@ init(int argc, char * * argv, struct runtime_vars * v)
 	syslog(LOG_NOTICE, "version " MINIUPNPD_VERSION " started");
 #endif /* TOMATO */
 
+	/* Step (6) set startup time stamp---------------------------------------------------------- */
 	set_startup_time();
 
-	/* presentation url */
+	/* Step (7) compute presentation URL---------------------------------------------------------- */
 	if(presurl)
 	{
 		strncpy(presentationurl, presurl, PRESENTATIONURL_MAX_LEN);
@@ -1855,7 +1886,7 @@ init(int argc, char * * argv, struct runtime_vars * v)
 		         /*"http://%s:%d/", lan_addrs.lh_first->str, 80);*/
 	}
 
-	/* set signal handler */
+	/* Step (8) set signal handlers----------------------------------------------------------  */
 	memset(&sa, 0, sizeof(struct sigaction));
 	sa.sa_handler = sigterm;
 
@@ -1893,18 +1924,19 @@ init(int argc, char * * argv, struct runtime_vars * v)
 	}
 #endif /* !TOMATO && ENABLE_LEASEFILE && LEASEFILE_USE_REMAINING_TIME */
 
-	/* initialize random number generator */
+	/* Step (9) init random generator (srandom())---------------------------------------------------------- */
 	srandom((unsigned int)time(NULL));
 #ifdef RANDOMIZE_URLS
 	snprintf(random_url, RANDOM_URL_MAX_LEN, "%08lx", random());
 #endif /* RANDOMIZE_URLS */
 
-	/* initialize redirection engine (and pinholes) */
+	/* Step (10) initialize redirection engine (and pinholes)---------------------------------------------------------- */
 	if(init_redirect() < 0)
 	{
 		syslog(LOG_ERR, "Failed to init redirection engine. EXITING");
 		return 1;
 	}
+
 #ifdef ENABLE_UPNPPINHOLE
 #ifdef USE_NETFILTER
 	init_iptpinhole();
@@ -2062,7 +2094,7 @@ main(int argc, char * * argv)
 
 	int * snotify = NULL;
 	int addr_count;
-	LIST_HEAD(httplisthead, upnphttp) upnphttphead;
+	LIST_HEAD(httplisthead, upnphttp) upnphttphead; //contains a list of active http connection accepted by shttpl
 	struct upnphttp * e = 0;
 	struct upnphttp * next;
 	fd_set readset;	/* for select() */
@@ -2103,6 +2135,9 @@ main(int argc, char * * argv)
 #ifdef USE_IPTABLES
 			puts("using netfilter(iptables) backend");
 #endif
+#ifdef USE_SDN
+			puts("using sdn(onos) backend");
+#endif
 #ifdef USE_NFTABLES
 			puts("using netfilter(nftables) backend");
 #endif
@@ -2116,8 +2151,9 @@ main(int argc, char * * argv)
 			return 0;
 		}
 	}
+	
 	memset(&v, 0, sizeof(v));
-	if(init(argc, argv, &v) != 0)
+	if(init(argc, argv, &v) != 0)  /* 0 means success, 1 means error*/
 		return 1;
 #ifdef ENABLE_HTTPS
 	if(init_ssl() < 0)
@@ -2143,7 +2179,7 @@ main(int argc, char * * argv)
 	}
 #endif
 
-	LIST_INIT(&upnphttphead);
+	LIST_INIT(&upnphttphead); // init the list, set head pointer of the list to null
 #ifdef USE_MINIUPNPDCTL
 	LIST_INIT(&ctllisthead);
 #endif
@@ -2170,13 +2206,19 @@ main(int argc, char * * argv)
 	       " ",
 #endif
 	       GETFLAG(ENABLEUPNPMASK) ? "UPnP-IGD " : "",
-	       ext_if_name, upnp_bootid);
+#ifdef USE_SDN
+		   "(no iface, sdn mode)",
+#else
+	       ext_if_name,
+#endif
+		   upnp_bootid);
 #ifdef ENABLE_IPV6
 	if (ext_if_name6 != ext_if_name) {
 		syslog(LOG_INFO, "specific IPv6 ext if %s", ext_if_name6);
 	}
 #endif
 
+#ifndef USE_SDN
 	if(GETFLAG(PERFORMSTUNMASK))
 	{
 		if (update_ext_ip_addr_from_stun(1) != 0) {
@@ -2198,16 +2240,17 @@ main(int argc, char * * argv)
 			disable_port_forwarding = 1;
 		}
 	}
+#endif
 
 	if(GETFLAG(ENABLEUPNPMASK))
 	{
 		unsigned short listen_port;
-		listen_port = (v.port > 0) ? v.port : 0;
+		listen_port = (v.port > 0) ? v.port : 0; // If listen_port is 0, auto-select will be used
 		/* open socket for HTTP connections. Listen on the 1st LAN address */
 #ifdef ENABLE_IPV6
 		shttpl = OpenAndConfHTTPSocket(&listen_port, !GETFLAG(IPV6DISABLEDMASK));
 #else /* ENABLE_IPV6 */
-		shttpl = OpenAndConfHTTPSocket(&listen_port);
+		shttpl = OpenAndConfHTTPSocket(&listen_port); // For SCDP and SOAP action
 #endif /* ENABLE_IPV6 */
 		if(shttpl < 0)
 		{
@@ -2432,7 +2475,7 @@ main(int argc, char * * argv)
 	}
 #endif /* HAS_LIBCAP_NG */
 
-	/* main loop */
+	/* MAIN: main loop */
 	while(!quitting)
 	{
 #ifdef USE_TIME_AS_BOOTID
@@ -2453,6 +2496,7 @@ main(int argc, char * * argv)
 		if(should_send_public_address_change_notif)
 		{
 			syslog(LOG_INFO, "should send external iface address change notification(s)");
+#ifndef USE_SDN
 			if(GETFLAG(PERFORMSTUNMASK))
 				update_ext_ip_addr_from_stun(0);
 			if (!use_ext_ip_addr)
@@ -2472,6 +2516,7 @@ main(int argc, char * * argv)
 					disable_port_forwarding = reserved;
 				}
 			}
+#endif
 #ifdef ENABLE_NATPMP
 			if(GETFLAG(ENABLENATPMPMASK))
 				SendNATPMPPublicAddressChangeNotification(snatpmp, addr_count);
@@ -2494,9 +2539,10 @@ main(int argc, char * * argv)
 #endif
 			should_send_public_address_change_notif = 0;
 		}
+
 		/* Check if we need to send SSDP NOTIFY messages and do it if
 		 * needed */
-		if(upnp_gettimeofday(&timeofday) < 0)
+		if(upnp_gettimeofday(&timeofday) < 0) // 0 means success, otherwise failure
 		{
 			syslog(LOG_ERR, "gettimeofday(): %m");
 			timeout.tv_sec = v.notify_interval;
@@ -2534,7 +2580,9 @@ main(int argc, char * * argv)
 				}
 			}
 		}
-		/* remove unused rules */
+
+#ifndef USE_SDN /* $qwe$ */
+		/* remove unused rules */ 
 		if( v.clean_ruleset_interval
 		  && (timeofday.tv_sec >= checktime.tv_sec + v.clean_ruleset_interval))
 		{
@@ -2555,7 +2603,7 @@ main(int argc, char * * argv)
 		  && ((unsigned int)timeofday.tv_sec >= nextruletoclean_timestamp))
 		{
 			syslog(LOG_DEBUG, "cleaning expired Port Mappings");
-			get_upnp_rules_state_list(0);
+			get_upnp_rules_state_list(0); /*$qwe$*/
 		}
 		if(nextruletoclean_timestamp
 		  && ((unsigned int)timeout.tv_sec >= (nextruletoclean_timestamp - timeofday.tv_sec)))
@@ -2565,6 +2613,7 @@ main(int argc, char * * argv)
 			syslog(LOG_DEBUG, "setting timeout to %u sec",
 			       (unsigned)timeout.tv_sec);
 		}
+#endif
 #ifdef ENABLE_UPNPPINHOLE
 		/* Clean up expired IPv6 PinHoles */
 		next_pinhole_ts = 0;
@@ -2639,7 +2688,7 @@ main(int argc, char * * argv)
 		{
 			if(e->socket >= 0)
 			{
-				if(e->state <= EWaitingForHttpContent)
+				if(e->state <= EWaitingForHttpContent) //socket is waiting for GET or POST request
 					FD_SET(e->socket, &readset);
 				else if(e->state == ESendingAndClosing)
 					FD_SET(e->socket, &writeset);
@@ -2929,7 +2978,7 @@ main(int argc, char * * argv)
 				if(FD_ISSET(e->socket, &readset) ||
 				   FD_ISSET(e->socket, &writeset))
 				{
-					Process_upnphttp(e);
+					Process_upnphttp(e); /*$qwe$*/
 				}
 			}
 		}

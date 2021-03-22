@@ -29,6 +29,7 @@ static const struct {
 	enum upnpconfigoptions id;
 	const char * name;
 } optionids[] = {
+#ifndef USE_SDN
 	{ UPNPEXT_IFNAME, "ext_ifname" },
 #ifdef ENABLE_IPV6
 	{ UPNPEXT_IFNAME6, "ext_ifname6" },
@@ -37,6 +38,7 @@ static const struct {
 	{ UPNPEXT_PERFORM_STUN, "ext_perform_stun" },
 	{ UPNPEXT_STUN_HOST, "ext_stun_host" },
 	{ UPNPEXT_STUN_PORT, "ext_stun_port" },
+#endif
 	{ UPNPLISTENING_IP, "listening_ip" },
 #ifdef ENABLE_IPV6
 	{ UPNPIPV6_LISTENING_IP, "ipv6_listening_ip" },
@@ -95,7 +97,10 @@ static const struct {
 	{ UPNPFORCEIGDDESCV1, "force_igd_desc_v1"},
 #endif
 	{ UPNPMINISSDPDSOCKET, "minissdpdsocket"},
-	{ UPNPSECUREMODE, "secure_mode"}
+	{ UPNPSECUREMODE, "secure_mode"},
+#ifdef USE_SDN
+	{ UPNPCONTROLLERADDR, "controller_address"}
+#endif
 };
 
 int

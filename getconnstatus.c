@@ -9,7 +9,13 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include "getconnstatus.h"
+#include "config.h"
+
+#ifdef USE_SDN
+#include "sdn/iptcrdr.h"
+#else
 #include "getifaddr.h"
+#endif
 
 #define STATUS_UNCONFIGURED (0)
 #define STATUS_CONNECTING (1)
@@ -28,14 +34,22 @@
  *  4 - Disconnecting
  *  5 - Disconnected */
 int
-get_wan_connection_status(const char * ifname)
+get_wan_connection_status(
+#ifndef USE_SDN
+	const char * ifname
+#endif
+)
 {
-	char addr[INET_ADDRSTRLEN];
 	int r;
 
 	/* we need a better implementation here.
 	 * I'm afraid it should be device specific */
+#ifdef USE_SDN
+	r = get_sdn_igd_wan_conn_status();
+#else
+	char addr[INET_ADDRSTRLEN];
 	r = getifaddr(ifname, addr, INET_ADDRSTRLEN, NULL, NULL);
+#endif
 	return (r < 0) ? STATUS_DISCONNECTED : STATUS_CONNECTED;
 }
 
@@ -43,12 +57,20 @@ get_wan_connection_status(const char * ifname)
  * return the same value as get_wan_connection_status()
  * as a C string */
 const char *
-get_wan_connection_status_str(const char * ifname)
+get_wan_connection_status_str(
+#ifndef USE_SDN
+	const char * ifname
+#endif
+	)
 {
 	int status;
 	const char * str = NULL;
 
+#ifdef USE_SDN
+	status = get_wan_connection_status();
+#else
 	status = get_wan_connection_status(ifname);
+#endif
 	switch(status) {
 	case 0:
 		str = "Unconfigured";

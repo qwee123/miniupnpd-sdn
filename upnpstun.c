@@ -6,7 +6,7 @@
  * (c) 2018 Pali Rohár
  * This software is subject to the conditions detailed
  * in the LICENCE file provided within the distribution */
-
+#ifdef USE_SDN
 #include <sys/select.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -26,7 +26,6 @@
 
 #include "upnputils.h"
 #include "upnpstun.h"
-
 #if defined(USE_NETFILTER)
 #include "netfilter/iptcrdr.h"
 #endif
@@ -439,7 +438,11 @@ int perform_stun(const char *if_name, const char *if_addr, const char *stun_host
 
 	/* Unblock local ports */
 	for (i = 0; i < 4; ++i) {
-		if (add_filter_rule2(if_name, NULL, if_addr, local_ports[i], local_ports[i], IPPROTO_UDP, "stun test") < 0) {
+		if (add_filter_rule2(
+#ifndef USE_SDN
+						    if_name,
+#endif
+							NULL, if_addr, local_ports[i], local_ports[i], IPPROTO_UDP, "stun test") < 0) {
 			syslog(LOG_ERR, "%s: add_filter_rule2(..., %hu, ...) FAILED",
 			       "perform_stun", local_ports[i]);
 		}
@@ -469,7 +472,11 @@ int perform_stun(const char *if_name, const char *if_addr, const char *stun_host
 
 	/* Remove unblock for local ports */
 	for (i = 0; i < 4; ++i) {
-		delete_filter_rule(if_name, local_ports[i], IPPROTO_UDP);
+		delete_filter_rule(
+#ifndef USE_SDN
+			               if_name,
+#endif
+						   local_ports[i], IPPROTO_UDP);
 		close(fds[i]);
 	}
 
@@ -600,4 +607,5 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
+#endif
 #endif

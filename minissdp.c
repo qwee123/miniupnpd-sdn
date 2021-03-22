@@ -816,7 +816,7 @@ SendSSDPNotifies(int s, const char * host, unsigned short http_port,
 #endif /* ENABLE_IPV6 */
 }
 
-/* SendSSDPNotifies2() sends SSDP NOTIFY packets on all interfaces
+/* SendSSDPNotifies2() sends SSDP NOTIFY(containing info. like http_port) packets on all interfaces
  * for all destinations, all devices / services */
 void
 SendSSDPNotifies2(int * sockets,

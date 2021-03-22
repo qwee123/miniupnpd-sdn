@@ -26,6 +26,10 @@
 #include "upnpevents.h"
 #include "portinuse.h"
 #include "upnputils.h"
+#if defined(USE_SDN)
+#include <stdbool.h>
+#include "sdn/iptcrdr.h"
+#endif
 #if defined(USE_NETFILTER)
 #include "netfilter/iptcrdr.h"
 #endif
@@ -335,27 +339,36 @@ int
 upnp_redirect(const char * rhost, unsigned short eport,
               const char * iaddr, unsigned short iport,
               const char * protocol, const char * desc,
-              unsigned int leaseduration)
+              unsigned int leaseduration
+#ifdef USE_SDN
+			  , bool automode, unsigned short * ret_eport
+#endif
+			  )
 {
-	int proto, r;
+	int r;
 	char iaddr_old[32];
 	char rhost_old[32];
 	unsigned short iport_old;
 	struct in_addr address;
+#ifdef USE_SDN
+	const char * proto = protocol;
+#else 
 	unsigned int timestamp;
+	int proto = proto_atoi(protocol);
+#endif
 
-	proto = proto_atoi(protocol);
 	if(inet_aton(iaddr, &address) <= 0) {
 		syslog(LOG_ERR, "inet_aton(%s) FAILED", iaddr);
 		return -1;
 	}
-
+#ifndef USE_SDN
 	if(!check_upnp_rule_against_permissions(upnppermlist, num_upnpperm,
 	                                        eport, address, iport)) {
 		syslog(LOG_INFO, "redirection permission check failed for "
 		                 "%hu->%s:%hu %s", eport, iaddr, iport, protocol);
 		return -3;
 	}
+#endif
 
 	if (desc == NULL)
 		desc = "";	/* assume empty description */
@@ -392,10 +405,23 @@ upnp_redirect(const char * rhost, unsigned short eport,
 	 *     =         =           =           =         Success (overwrite)
 	 */
 	rhost_old[0] = '\0';
+
+#ifdef USE_SDN
+	syslog(LOG_INFO, "redirecting port %hu to %s:%hu protocol %s",
+		eport, iaddr, iport, proto);
+	return upnp_redirect_internal(rhost, eport, iaddr, iport, proto,
+								desc, leaseduration, automode, ret_eport);
+#else
+	/* Only match proto & eport
+	* Return 0 if any existing identical rule is found.
+	* iaddr_old, iport_old, rhost_old will contain the corresponding value of the matched rule
+	* after the function call.
+	*/
 	r = get_redirect_rule(ext_if_name, eport, proto,
 	                      iaddr_old, sizeof(iaddr_old), &iport_old, 0, 0,
 	                      rhost_old, sizeof(rhost_old),
 	                      &timestamp, 0, 0);
+
 	if(r == 0) {
 		if(strcmp(iaddr, iaddr_old)==0 &&
 		   ((rhost == NULL && rhost_old[0]=='\0') ||
@@ -404,6 +430,13 @@ upnp_redirect(const char * rhost, unsigned short eport,
 			syslog(LOG_INFO, "updating existing port mapping %hu %s (rhost '%s') => %s:%hu",
 				eport, protocol, rhost_old, iaddr_old, iport_old);
 			timestamp = (leaseduration > 0) ? upnp_time() + leaseduration : 0;
+
+			if(iport != iport_old) {
+				r = update_portmapping(eport, proto, iport, desc, timestamp);
+			} else {
+				r = update_portmapping_desc_timestamp(eport, proto, desc, timestamp);
+			}
+
 			if(iport != iport_old) {
 				r = update_portmapping(ext_if_name, eport, proto, iport, desc, timestamp);
 			} else {
@@ -434,29 +467,66 @@ upnp_redirect(const char * rhost, unsigned short eport,
 		return upnp_redirect_internal(rhost, eport, iaddr, iport, proto,
 		                              desc, timestamp);
 	}
+#endif
+
+
 }
 
 int
 upnp_redirect_internal(const char * rhost, unsigned short eport,
                        const char * iaddr, unsigned short iport,
-                       int proto, const char * desc,
-                       unsigned int timestamp)
+#ifdef USE_SDN
+					   const char * proto,
+#else
+                       int proto,
+#endif
+					   const char * desc,
+#ifdef USE_SDN
+					   unsigned int leaseduration, bool automode,
+					   unsigned short * ret_eport
+#else
+                       unsigned int timestamp
+#endif
+					   )
 {
+	int r;
 	/*syslog(LOG_INFO, "redirecting port %hu to %s:%hu protocol %s for: %s",
 		eport, iaddr, iport, protocol, desc);			*/
 	if(disable_port_forwarding)
 		return -1;
-	if(add_redirect_rule2(ext_if_name, rhost, eport, iaddr, iport, proto,
-	                      desc, timestamp) < 0) {
+
+#ifdef USE_SDN
+	if (automode) {
+		r = add_any_redirect_and_filter_rules(rhost, eport, iaddr, iport,
+								 proto, desc, leaseduration, ret_eport);
+	} else {
+		r = add_redirect_and_filter_rules(rhost, eport, iaddr, iport,
+								 proto, desc, leaseduration);
+	}
+	
+#ifdef ENABLE_EVENTS
+	/* the number of port mappings changed, we must
+	 * inform the subscribers */
+	upnp_event_var_change_notify(EWanIPC);
+#endif
+	return r;
+#else
+	r = add_redirect_rule2(ext_if_name, rhost, eport, 
+					iaddr, iport, proto, desc, timestamp);
+
+	if(r < 0) {
 		return -1;
 	}
 
 #ifdef ENABLE_LEASEFILE
 	lease_file_add( eport, iaddr, iport, proto, desc, timestamp);
 #endif
+ 
 /*	syslog(LOG_INFO, "creating pass rule to %s:%hu protocol %s for: %s",
 		iaddr, iport, protocol, desc);*/
-	if(add_filter_rule2(ext_if_name, rhost, iaddr, eport, iport, proto, desc) < 0) {
+	if(add_filter_rule2(ext_if_name, rhost, iaddr,
+				 eport, iport, proto, desc) < 0) {
+
 		/* clean up the redirect rule */
 #if !defined(__linux__)
 		delete_redirect_rule(ext_if_name, eport, proto);
@@ -467,12 +537,14 @@ upnp_redirect_internal(const char * rhost, unsigned short eport,
 		if(!nextruletoclean_timestamp || (timestamp < nextruletoclean_timestamp))
 			nextruletoclean_timestamp = timestamp;
 	}
+
 #ifdef ENABLE_EVENTS
 	/* the number of port mappings changed, we must
 	 * inform the subscribers */
 	upnp_event_var_change_notify(EWanIPC);
 #endif
 	return 0;
+#endif
 }
 
 
@@ -492,12 +564,21 @@ upnp_get_redirection_infos(unsigned short eport, const char * protocol,
 
 	if(desc && (desclen > 0))
 		desc[0] = '\0';
+
+#ifdef USE_SDN
+	r = get_redirect_rule(eport, protocol,
+	                      iaddr, iaddrlen, iport, desc, desclen,
+	                      rhost, rhostlen, leaseduration,
+	                      0, 0);
+#else
 	if(rhost && (rhostlen > 0))
 		rhost[0] = '\0';
+
 	r = get_redirect_rule(ext_if_name, eport, proto_atoi(protocol),
 	                      iaddr, iaddrlen, iport, desc, desclen,
 	                      rhost, rhostlen, &timestamp,
 	                      0, 0);
+	
 	if(r == 0 &&
 	   timestamp > 0 &&
 	   timestamp > (unsigned int)(current_time = upnp_time())) {
@@ -505,6 +586,8 @@ upnp_get_redirection_infos(unsigned short eport, const char * protocol,
 	} else {
 		*leaseduration = 0;
 	}
+
+#endif
 	return r;
 }
 
@@ -517,16 +600,24 @@ upnp_get_redirection_infos_by_index(int index,
                                     char * rhost, int rhostlen,
                                     unsigned int * leaseduration)
 {
-	/*char ifname[IFNAMSIZ];*/
-	int proto = 0;
-	unsigned int timestamp;
-	time_t current_time;
-
 	if(desc && (desclen > 0))
 		desc[0] = '\0';
 	if(rhost && (rhostlen > 0))
 		rhost[0] = '\0';
-	if(get_redirect_rule_by_index(index, 0/*ifname*/, eport, iaddr, iaddrlen,
+
+#ifdef USE_SDN
+	return get_redirect_rule_by_index(index, eport, iaddr,
+	                      iaddrlen, iport, protocol, desc,
+						  desclen, rhost, rhostlen, leaseduration,
+	                      0, 0);
+#else
+	/*char ifname[IFNAMSIZ];*/
+	int proto = 0;
+	unsigned int timestamp;
+	time_t current_time;
+	
+	if(get_redirect_rule_by_index(index, 0/*ifname*/,
+								  eport, iaddr, iaddrlen,
 	                              iport, &proto, desc, desclen,
 	                              rhost, rhostlen, &timestamp,
 	                              0, 0) < 0)
@@ -547,14 +638,23 @@ upnp_get_redirection_infos_by_index(int index,
 			memcpy(protocol, "UDP", 4);
 		return 0;
 	}
+#endif
 }
 
 /* called from natpmp.c too */
 int
-_upnp_delete_redir(unsigned short eport, int proto)
+_upnp_delete_redir(unsigned short eport, 
+#ifdef USE_SDN
+			const char * rhost, const char * proto
+#else
+			int proto
+#endif
+			)
 {
 	int r;
-#if defined(__linux__)
+#if defined(USE_SDN)
+	r = delete_redirect_and_filter_rules(rhost, eport, proto);
+#elif defined(__linux__)
 	r = delete_redirect_and_filter_rules(eport, proto);
 #elif defined(USE_PF)
 	r = delete_redirect_and_filter_rules(ext_if_name, eport, proto);
@@ -573,10 +673,20 @@ _upnp_delete_redir(unsigned short eport, int proto)
 }
 
 int
-upnp_delete_redirection(unsigned short eport, const char * protocol)
+upnp_delete_redirection(
+#ifdef USE_SDN
+    					const char * rhost,
+#endif
+						unsigned short eport, const char * protocol)
 {
 	syslog(LOG_INFO, "removing redirect rule port %hu %s", eport, protocol);
-	return _upnp_delete_redir(eport, proto_atoi(protocol));
+	return _upnp_delete_redir(eport, 
+#ifdef USE_SDN
+		rhost, protocol
+#else
+		proto_atoi(protocol)
+#endif
+	);
 }
 
 /* upnp_get_portmapping_number_of_entries() */
@@ -624,9 +734,13 @@ get_upnp_rules_state_list(int max_rules_number_target)
 		return 0;
 	current_time = upnp_time();
 	nextruletoclean_timestamp = 0;
-	while(get_redirect_rule_by_index(i, /*ifname*/0, &tmp->eport, 0, 0,
-	                              &iport, &proto, 0, 0, 0,0, &timestamp,
-								  &tmp->packets, &tmp->bytes) >= 0)
+	while(get_redirect_rule_by_index(i,
+#ifndef USE_SDN 
+	                                /*ifname*/0,
+#endif
+									&tmp->eport, 0, 0,
+	                                &iport, &proto, 0, 0, 0,0, &timestamp,
+								    &tmp->packets, &tmp->bytes) >= 0)
 	{
 		tmp->to_remove = 0;
 		if(timestamp > 0) {
@@ -681,7 +795,7 @@ get_upnp_rules_state_list(int max_rules_number_target)
 		{
 			syslog(LOG_NOTICE, "remove port mapping %hu %s because it has expired",
 			       tmp->eport, proto_itoa(tmp->proto));
-			_upnp_delete_redir(tmp->eport, tmp->proto);
+			_upnp_delete_redir(tmp->eport, "", tmp->proto);
 			*p = tmp->next;
 			free(tmp);
 			i--;
@@ -704,7 +818,8 @@ get_upnp_rules_state_list(int max_rules_number_target)
 void
 remove_unused_rules(struct rule_state * list)
 {
-	char ifname[IFNAMSIZ];
+//	unused variable
+//	char ifname[IFNAMSIZ];
 	unsigned short iport;
 	struct rule_state * tmp;
 	u_int64_t packets;
@@ -715,8 +830,12 @@ remove_unused_rules(struct rule_state * list)
 	while(list)
 	{
 		/* remove the rule if no traffic has used it */
-		if(get_redirect_rule(ifname, list->eport, list->proto,
-	                         0, 0, &iport, 0, 0, 0, 0, &timestamp,
+		if(get_redirect_rule(
+#ifndef USE_SDN
+                             ifname,
+#endif
+							 list->eport, list->proto,
+ 	                         0, 0, &iport, 0, 0, 0, 0, &timestamp,
 		                     &packets, &bytes) >= 0)
 		{
 			if(packets == list->packets && bytes == list->bytes)
@@ -725,7 +844,7 @@ remove_unused_rules(struct rule_state * list)
 				       "%" PRIu64 "packets %" PRIu64 "bytes",
 				       list->eport, proto_itoa(list->proto),
 				       packets, bytes);
-				_upnp_delete_redir(list->eport, list->proto);
+				_upnp_delete_redir(list->eport, "", list->proto); //Use empty string to replace rhost temporary
 				n++;
 			}
 		}
@@ -740,17 +859,39 @@ remove_unused_rules(struct rule_state * list)
 /* upnp_get_portmappings_in_range()
  * return a list of all "external" ports for which a port
  * mapping exists */
+#ifdef USE_SDN
+struct portmapping_entry *
+#else
 unsigned short *
+#endif
 upnp_get_portmappings_in_range(unsigned short startport,
                                unsigned short endport,
                                const char * protocol,
                                unsigned int * number)
 {
-	int proto;
-	proto = proto_atoi(protocol);
 	if(!number)
 		return NULL;
+#ifdef USE_SDN
+	return get_portmappings_in_range(startport, endport, protocol, number);
+#else
+	int proto;
+	proto = proto_atoi(protocol);
 	return get_portmappings_in_range(startport, endport, proto, number);
+#endif
+}
+
+int
+upnp_delete_portmappings_in_range(unsigned short startport,
+                               unsigned short endport,
+                               const char * protocol,
+                               unsigned short ** success_list, unsigned int * slist_number,
+							   unsigned short ** fail_list, unsigned int * flist_number)
+{
+	if(!slist_number || !flist_number)
+		return -1;
+
+	return delete_portmappings_in_range(startport, endport, protocol,
+					success_list, slist_number, fail_list, flist_number);
 }
 
 /* stuff for miniupnpdctl */

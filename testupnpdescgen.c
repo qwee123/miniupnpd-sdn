@@ -46,6 +46,12 @@ const char * ext_if_name = "eth0";
 
 int runtime_flags = 0;
 
+int get_sdn_igd_external_ip_addr(char *ret_addr, int max_len)
+{
+	strncpy(ret_addr, "1.2.3.4", max_len);
+	return 0;
+}
+
 int getifaddr(const char * ifname, char * buf, int len, struct in_addr * addr, struct in_addr * mask)
 {
 	UNUSED(ifname);
