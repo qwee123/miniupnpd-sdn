@@ -1,0 +1,12 @@
+FROM ubuntu:18.04
+
+RUN apt update && apt install -y net-tools iputils-ping vim tcpdump
+RUN apt update && apt install -y iproute2
+
+COPY miniupnpd /bin
+
+WORKDIR miniupnpd
+COPY miniupnpd.docker.conf miniupnpd.conf
+
+CMD /bin/bash
+#e.g. docker run -it --name miniupnpd --cap-add NET_ADMIN --cap-add NET_BROADCAST miniupnpd:v1

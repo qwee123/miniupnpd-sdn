@@ -1,0 +1,8 @@
+FROM python:3.6-buster
+
+RUN apt update && apt install -y net-tools iputils-ping vim tcpdump
+RUN python3 -m pip install flask upnpy
+
+COPY ./temp_client/client.py .
+
+CMD /bin/bash
