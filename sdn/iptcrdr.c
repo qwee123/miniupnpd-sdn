@@ -88,6 +88,11 @@ retrievePortmappingArrayFromJsonObj(struct json_object *jobj,
 			 const char *key, struct portmapping_entry ** ret, unsigned int * cap);
 
 
+/*
+ * To printout a json object:
+ * printf("jobj from str:\n---\n%s\n---\n", json_object_to_json_string_ext(data.payload, JSON_C_TO_STRING_SPACED | JSON_C_TO_STRING_PRETTY));
+ */ 
+
 /* dummy init and shutdown functions */
 int init_redirect(void)
 {
@@ -153,7 +158,7 @@ int get_sdn_igd_wan_conn_status(void) {
 
 /*
  * This function should return -1 if there is any abnormality occured during the process.
- * Even if there is only part of data unavailable, ret_data will be entirely descarded by the outside funtions.
+ * Even if there is only part of data unavailable, ret_data will be entirely discarded by the outside funtions.
  */
 int get_sdn_igd_iface_status(struct igd_iface_status * ret_data) 
 {
@@ -287,13 +292,12 @@ _add_redirect_and_filter_rules(const char * rhost, unsigned short eport,
 {
 	struct json_object *jobj = json_object_new_object();
 	
-	//use json_int seems to be safe to convert an unsigned short after testing.
 	if (json_object_object_add(jobj, json_tag_rhost, json_object_new_string(rhost) < 0)
 		|| json_object_object_add(jobj, json_tag_eport, json_object_new_int(eport)) < 0
 	    || json_object_object_add(jobj, json_tag_proto, json_object_new_string(proto)) < 0
 		|| json_object_object_add(jobj, json_tag_iport, json_object_new_int(iport)) < 0
 		|| json_object_object_add(jobj, json_tag_iaddr, json_object_new_string(iaddr)) < 0
-		|| json_object_object_add(jobj, json_tag_duration, json_object_new_string(iaddr)) < 0
+		|| json_object_object_add(jobj, json_tag_duration, json_object_new_int(duration)) < 0
 		|| json_object_object_add(jobj, json_tag_auto, json_object_new_boolean(automode)) < 0)
 	{
 		syslog(LOG_WARNING, "Fail to retrieve inputs of add_redirect_and_filter_rules method.");

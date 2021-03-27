@@ -8,6 +8,7 @@ device = upnp.get_igd()
 service = device['WANIPConn1']
 service2 = device['WANCommonIFC1']
 
+'''
 print("Tests for service WANIPConn1: ")
 print(*(service.get_actions()), sep="\n")
 
@@ -66,7 +67,7 @@ print("GetExternalIPAddress: ", service.GetExternalIPAddress())
 print("GetConnectionTypeInfo: ", service.GetConnectionTypeInfo())
 print("GetStatusInfo: ", service.GetStatusInfo())
 print("\n\n")
-
+'''
 print("Tests for service WANCommonIFC1\n")
 print(*(service2.get_actions()), sep="\n")
 print("GetCommonLinkProperties: ", service2.GetCommonLinkProperties())
