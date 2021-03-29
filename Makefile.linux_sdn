@@ -164,7 +164,7 @@ testasyncsendto:	testasyncsendto.o asyncsendto.o upnputils.o \
 	getroute.o
 
 testportinuse:	testportinuse.o portinuse.o getifaddr.o \
-	iptcrdr.o upnpglobalvars.o mongoose.o onosclient.o
+	iptcrdr.o upnpglobalvars.o mongoose.o onosclient.o $(JSONLIB)
 
 testminissdp:	testminissdp.o minissdp.o upnputils.o upnpglobalvars.o \
 	asyncsendto.o getroute.o

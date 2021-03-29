@@ -6,6 +6,7 @@ controller_port=
 controller_container_name=
 client_gateway=172.16.0.1
 miniupnpd_addr=172.16.0.10
+miniupnpd_version=v2
 
 if [ -z "$1" ]; then
 	echo "Please Specify an experiment situation, it's either 'pytest' or 'onos'"
@@ -54,7 +55,7 @@ if [ "$(docker ps -aq -f name='^miniupnpd-sdn$')" ]; then
 	docker stop miniupnpd-sdn && docker rm miniupnpd-sdn
 fi
 
-docker run -itd --name miniupnpd-sdn --cap-add NET_ADMIN --cap-add NET_BROADCAST --network ${onos_nfv_network} miniupnpd-sdn:v1
+docker run -itd --name miniupnpd-sdn --cap-add NET_ADMIN --cap-add NET_BROADCAST --network ${onos_nfv_network} miniupnpd-sdn:${miniupnpd_version}
 
 clientname=
 for i in $(seq 1 2)

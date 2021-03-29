@@ -168,14 +168,14 @@ int get_sdn_igd_iface_status(struct igd_iface_status * ret_data)
 	while(!data.done) mg_mgr_poll(&mgr, 1000);
 
 	char *iface_status;
-	int baudrate, bytes_sent, bytes_recv, pkt_sent, pkt_recv;
+	unsigned int baudrate, bytes_sent, bytes_recv, pkt_sent, pkt_recv;
 
 	if (!retrieveStringFromJsonObj(data.payload, json_tag_iface_status, &iface_status)
-		|| !retrieveIntFromJsonObj(data.payload, json_tag_baudrate, &baudrate)
-		|| !retrieveIntFromJsonObj(data.payload, json_tag_total_bytes_sent, &bytes_sent) 
-		|| !retrieveIntFromJsonObj(data.payload, json_tag_total_bytes_recv, &bytes_recv)
-		|| !retrieveIntFromJsonObj(data.payload, json_tag_total_pkt_sent, &pkt_sent)
-		|| !retrieveIntFromJsonObj(data.payload, json_tag_total_pkt_recv, &pkt_recv)) 
+		|| !retrieveUnsignedIntFromJsonObj(data.payload, json_tag_baudrate, &baudrate)
+		|| !retrieveUnsignedIntFromJsonObj(data.payload, json_tag_total_bytes_sent, &bytes_sent) 
+		|| !retrieveUnsignedIntFromJsonObj(data.payload, json_tag_total_bytes_recv, &bytes_recv)
+		|| !retrieveUnsignedIntFromJsonObj(data.payload, json_tag_total_pkt_sent, &pkt_sent)
+		|| !retrieveUnsignedIntFromJsonObj(data.payload, json_tag_total_pkt_recv, &pkt_recv)) 
 	{
 		syslog(LOG_WARNING, "Fail to retreive igd runtime status from the response of onos");
 		return -1;
@@ -736,6 +736,7 @@ retrieveIntFromJsonObj(struct json_object *jobj, const char *key, int * ret) {
 		syslog(LOG_WARNING, "Fail to extract %s from json object\n", key);
 		return false;
 	}
+
 	if (json_object_get_type(tmp) != json_type_int) {
 		syslog(LOG_WARNING, "Retrieved %s value is not an int\n", key);
 		return false;

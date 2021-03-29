@@ -2419,7 +2419,7 @@ soapMethods[] =
 	{ "GetExternalIPAddress", GetExternalIPAddress},
 	{ "AddPortMapping", AddPortMapping},
 	{ "DeletePortMapping", DeletePortMapping},
-	{ "GetGenericPortMappingEntry", GetGenericPortMappingEntry}, //
+	{ "GetGenericPortMappingEntry", GetGenericPortMappingEntry},
 	{ "GetSpecificPortMappingEntry", GetSpecificPortMappingEntry},
 /* Required in WANIPConnection:2 */
 	{ "SetConnectionType", SetConnectionType},
