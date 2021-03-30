@@ -425,7 +425,7 @@ get_redirect_rule(unsigned short eport, const char * proto,
 	struct json_object *jobj = json_object_new_object();
 
 	//use json_int seems to be safe to convert an unsigned short after testing.
-	if (json_object_object_add(jobj, json_tag_rhost, json_object_new_string(rhost) < 0)
+	if (json_object_object_add(jobj, json_tag_rhost, json_object_new_string(rhost)) < 0
 		|| json_object_object_add(jobj, json_tag_eport, json_object_new_int(eport)) < 0
 	    || json_object_object_add(jobj, json_tag_proto, json_object_new_string(proto)) < 0)
 	{

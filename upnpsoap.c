@@ -480,6 +480,12 @@ AddPortMapping(struct upnphttp * h, const char * action, const char * ns)
 	}
 #endif
 
+#ifdef USE_SDN
+	if (!r_host) {
+		r_host = calloc(1, sizeof(char)); //init the r_host to an empty string
+	}
+#endif
+
 	/* IGD 2 MUST support both wildcard and specific IP address values
 	 * for RemoteHost (only the wildcard value was REQUIRED in release 1.0) */
 #ifndef SUPPORT_REMOTEHOST
@@ -687,6 +693,13 @@ AddAnyPortMapping(struct upnphttp * h, const char * action, const char * ns)
 		SoapError(h, 402, "Invalid Args");
 		return;
 	}
+
+#ifdef USE_SDN
+	if (!r_host) {
+		r_host = calloc(1, sizeof(char)); //init the r_host to an empty string
+	}
+#endif
+
 #ifndef SUPPORT_REMOTEHOST
 #ifdef UPNP_STRICT
 	if (r_host && (r_host[0] != '\0') && (0 != strcmp(r_host, "*")))
@@ -840,7 +853,7 @@ GetSpecificPortMappingEntry(struct upnphttp * h, const char * action, const char
 	ext_port = GetValueFromNameValueList(&data, "NewExternalPort");
 	protocol = GetValueFromNameValueList(&data, "NewProtocol");
 
-#if defined(UPNP_STRICT) || defined(USE_SDN)
+#ifdef UPNP_STRICT
 	if(!ext_port || !protocol || !r_host)
 #else
 	if(!ext_port || !protocol)
@@ -850,6 +863,13 @@ GetSpecificPortMappingEntry(struct upnphttp * h, const char * action, const char
 		SoapError(h, 402, "Invalid Args");
 		return;
 	}
+
+#ifdef USE_SDN
+	if (!r_host) {
+		r_host = calloc(1, sizeof(char)); //init the r_host to an empty string
+	}
+#endif
+
 #ifndef SUPPORT_REMOTEHOST
 #ifdef UPNP_STRICT
 	if (r_host && (r_host[0] != '\0') && (0 != strcmp(r_host, "*")))
@@ -1186,7 +1206,6 @@ GetGenericPortMappingEntry(struct upnphttp * h, const char * action, const char 
 
 	syslog(LOG_INFO, "%s: index=%d", action, (int)index);
 
-	rhost[0] = '\0';
 	r = upnp_get_redirection_infos_by_index((int)index, &eport, protocol, &iport,
                                             iaddr, sizeof(iaddr),
 	                                        desc, sizeof(desc),
