@@ -331,8 +331,12 @@ _add_redirect_and_filter_rules(const char * rhost, unsigned short eport,
 	while(!data.done) mg_mgr_poll(&mgr, 1000);
 
 	if (data.response_code == CONFLICT_409) {
-		syslog(LOG_WARNING, "Requested portmapping is conflicted with other ONOS APP.");
-		return -2;
+		if (automode) {
+			syslog(LOG_WARNING, "No available portmapping.");
+		} else {
+			syslog(LOG_WARNING, "Requested portmapping already exist.");
+		}
+		return -3;
 	} else if (data.response_code != OK_200) {
 		syslog(LOG_WARNING, "Got http error code %s during add portmapping action",
 										http_response_code_to_string[data.response_code]);
@@ -358,8 +362,7 @@ _add_redirect_and_filter_rules(const char * rhost, unsigned short eport,
  * Success: 0
  * Failure: -1
  * Conflicted: -2
- * Existed: -3
- * NoAvailable: -4
+ * Existed|NoAvailable: -3
  */ 
 int
 add_redirect_and_filter_rules(const char * rhost, unsigned short eport, 
@@ -380,9 +383,6 @@ add_redirect_and_filter_rules(const char * rhost, unsigned short eport,
 			return -4;
 		case -3: //Existed -> ConflictInMappingEntry
 			return -2;
-		case -4: //NoAvailable -> ActionFailed
-			syslog(LOG_WARNING, "Normal AddRedirect method received error code: NoAvailable, but it shouldn't.");
-			return -1;
 		default: //Failure and other -> ActionFailed
 			return -1;
 	}
@@ -407,10 +407,7 @@ add_any_redirect_and_filter_rules(const char * rhost, unsigned short eport,
 		case -2: //Conflicted -> ActionFailed
 			syslog(LOG_WARNING, "AddAnyRedirect method received error code: Conflicted, but it shouldn't.");
 			return -1;
-		case -3: //Existed -> ActionFailed
-			syslog(LOG_WARNING, "AddAnyRedirect method received error code: Existing, but it shouldn't.");
-			return -1;
-		case -4: //NoAvailable -> NoPortMapsAvailable
+		case -3: //NoAvailable -> NoPortMapsAvailable
 			return 1;
 		default: //Failure and other -> ActionFailed
 			return -1;

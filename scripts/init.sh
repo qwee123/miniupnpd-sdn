@@ -6,7 +6,7 @@ controller_port=
 controller_container_name=
 client_gateway=172.16.0.1
 miniupnpd_addr=172.16.0.10
-miniupnpd_version=v3
+miniupnpd_version=v4
 
 if [ -z "$1" ]; then
 	echo "Please Specify an experiment situation, it's either 'pytest' or 'onos'"
