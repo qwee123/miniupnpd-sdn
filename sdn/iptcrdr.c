@@ -50,7 +50,7 @@ static const char * json_tag_rhost = "rhost";
 static const char * json_tag_iaddr = "iaddr";
 static const char * json_tag_iport = "iport";
 static const char * json_tag_duration = "duration";
-static const char * json_tag_auto = "auto"; // To distinquish AddAny and normal Add method
+static const char * json_tag_auto = "autoselect"; // To distinquish AddAny and normal Add method
 static const char * json_tag_return_code = "return_code";
 /* success and failure are tags for deletePortmappings_in_range method */
 static const char * json_tag_success = "success";
@@ -90,7 +90,7 @@ retrievePortmappingArrayFromJsonObj(struct json_object *jobj,
 
 /*
  * To printout a json object:
- * printf("jobj from str:\n---\n%s\n---\n", json_object_to_json_string_ext(data.payload, JSON_C_TO_STRING_SPACED | JSON_C_TO_STRING_PRETTY));
+ * printf("jobj from str:\n---\n%s\n---\n", json_object_to_json_string_ext(data.response, JSON_C_TO_STRING_SPACED | JSON_C_TO_STRING_PRETTY));
  */ 
 
 /* dummy init and shutdown functions */
@@ -119,7 +119,13 @@ int get_sdn_igd_external_ip_addr(char * ret_addr, size_t max_len)
 	while(!data.done) mg_mgr_poll(&mgr, 1000);
 
 	char * ip;
-	if (!retrieveStringFromJsonObj(data.payload, json_tag_ext_ip, &ip)) 
+	if (data.response_code != OK_200) {
+		syslog(LOG_WARNING, "Got http error code %s during get external ip action",
+										http_response_code_to_string[data.response_code]);
+		return -1;
+	}
+	
+	if (!retrieveStringFromJsonObj(data.response, json_tag_ext_ip, &ip)) 
 	{
 		syslog(LOG_WARNING, "Fail to retreive external ip address from the response of onos");
 		return -1;
@@ -141,14 +147,19 @@ int get_sdn_igd_wan_conn_status(void) {
 	
 	while(!data.done) mg_mgr_poll(&mgr, 1000);
 
+	if (data.response_code != OK_200) {
+		syslog(LOG_WARNING, "Got http error code %s during get WAN connection status action",
+										http_response_code_to_string[data.response_code]);
+		return -1;
+	}
+
 	char * wan_conn_stat;
-	if (!retrieveStringFromJsonObj(data.payload, json_tag_wan_conn_status, &wan_conn_stat)) 
+	if (!retrieveStringFromJsonObj(data.response, json_tag_wan_conn_status, &wan_conn_stat)) 
 	{
 		syslog(LOG_WARNING, "Fail to retreive WAN connection status from the response of onos");
 		return -1;
 	}
 	
-	printf("%s\n", wan_conn_stat);
 	if (strncmp(wan_conn_stat, "connected", 9) != 0) {
 		return -1;
 	}
@@ -170,12 +181,18 @@ int get_sdn_igd_iface_status(struct igd_iface_status * ret_data)
 	char *iface_status;
 	unsigned int baudrate, bytes_sent, bytes_recv, pkt_sent, pkt_recv;
 
-	if (!retrieveStringFromJsonObj(data.payload, json_tag_iface_status, &iface_status)
-		|| !retrieveUnsignedIntFromJsonObj(data.payload, json_tag_baudrate, &baudrate)
-		|| !retrieveUnsignedIntFromJsonObj(data.payload, json_tag_total_bytes_sent, &bytes_sent) 
-		|| !retrieveUnsignedIntFromJsonObj(data.payload, json_tag_total_bytes_recv, &bytes_recv)
-		|| !retrieveUnsignedIntFromJsonObj(data.payload, json_tag_total_pkt_sent, &pkt_sent)
-		|| !retrieveUnsignedIntFromJsonObj(data.payload, json_tag_total_pkt_recv, &pkt_recv)) 
+	if (data.response_code != OK_200) {
+		syslog(LOG_WARNING, "Got http error code %s during get interface status action",
+										http_response_code_to_string[data.response_code]);
+		return -1;
+	}
+
+	if (!retrieveStringFromJsonObj(data.response, json_tag_iface_status, &iface_status)
+		|| !retrieveUnsignedIntFromJsonObj(data.response, json_tag_baudrate, &baudrate)
+		|| !retrieveUnsignedIntFromJsonObj(data.response, json_tag_total_bytes_sent, &bytes_sent) 
+		|| !retrieveUnsignedIntFromJsonObj(data.response, json_tag_total_bytes_recv, &bytes_recv)
+		|| !retrieveUnsignedIntFromJsonObj(data.response, json_tag_total_pkt_sent, &pkt_sent)
+		|| !retrieveUnsignedIntFromJsonObj(data.response, json_tag_total_pkt_recv, &pkt_recv)) 
 	{
 		syslog(LOG_WARNING, "Fail to retreive igd runtime status from the response of onos");
 		return -1;
@@ -305,7 +322,7 @@ _add_redirect_and_filter_rules(const char * rhost, unsigned short eport,
 	}
 
 	struct conn_runtime_vars data = { 
-		.request_params = jobj,
+		.request = jobj,
 		.done = false 
 	};
 
@@ -313,13 +330,22 @@ _add_redirect_and_filter_rules(const char * rhost, unsigned short eport,
 	
 	while(!data.done) mg_mgr_poll(&mgr, 1000);
 
+	if (data.response_code == CONFLICT_409) {
+		syslog(LOG_WARNING, "Requested portmapping is conflicted with other ONOS APP.");
+		return -2;
+	} else if (data.response_code != OK_200) {
+		syslog(LOG_WARNING, "Got http error code %s during add portmapping action",
+										http_response_code_to_string[data.response_code]);
+		return -1;
+	}
+
 	int ret_code;
-	if(!retrieveIntFromJsonObj(data.payload, json_tag_return_code, &ret_code)){
+	if(!retrieveIntFromJsonObj(data.response, json_tag_return_code, &ret_code)){
 		syslog(LOG_WARNING, "Fail to retrieve return code from reponses of onos.");
 		return -1;
 	}
 
-	if(ret_code == 0 && !retrievePortNumberFromJsonObj(data.payload, json_tag_eport, final_eport)){
+	if(ret_code == 0 && !retrievePortNumberFromJsonObj(data.response, json_tag_eport, final_eport)){
 		syslog(LOG_WARNING, "Fail to retrieve portnumber from reponses of onos.");
 		return 1;
 	}
@@ -434,7 +460,7 @@ get_redirect_rule(unsigned short eport, const char * proto,
 	}
 
 	struct conn_runtime_vars data = { 
-		.request_params = jobj,
+		.request = jobj,
 		.done = false 
 	};
 
@@ -442,23 +468,32 @@ get_redirect_rule(unsigned short eport, const char * proto,
 	
 	while(!data.done) mg_mgr_poll(&mgr, 1000);
 
+	if (data.response_code == NOTFOUND_404) {
+		syslog(LOG_WARNING, "Requested portmapping does not exist.");
+		return -1;
+	} else if (data.response_code != OK_200) {
+		syslog(LOG_WARNING, "Got http error code %s during get portmapping action",
+										http_response_code_to_string[data.response_code]);
+		return -1;
+	}
+
 	const char * rhost_new, * proto_new, * iaddr_new;
 	unsigned short eport_new, iport_new;
-	if (!retrieveStringFromJsonObj(data.payload, json_tag_rhost, &rhost_new))
+	if (!retrieveStringFromJsonObj(data.response, json_tag_rhost, &rhost_new))
 	{
 		syslog(LOG_WARNING, "Fail to retrieve remote host from response of onos.");
 		return -1;
 	}
 		
-	if (!retrievePortNumberFromJsonObj(data.payload, json_tag_eport, &eport_new)
-		|| eport_new != eport) 
+	if (!retrievePortNumberFromJsonObj(data.response, json_tag_eport, &eport_new)
+		|| eport_new != eport)
 	{
 		syslog(LOG_WARNING, "Fail to retrieve external port from response of onos."
 			"Or the received external port is not equeal to the requested one.");
 		return -1;
 	}
 	
-	if (!retrieveStringFromJsonObj(data.payload, json_tag_proto, &proto_new)
+	if (!retrieveStringFromJsonObj(data.response, json_tag_proto, &proto_new)
 		|| strcmp(proto_new, proto) != 0) 
 	{
 		syslog(LOG_WARNING, "Fail to retrieve protocol from response of onos."
@@ -466,17 +501,17 @@ get_redirect_rule(unsigned short eport, const char * proto,
 		return -1;	
 	}
 			
-	if (!retrieveStringFromJsonObj(data.payload, json_tag_iaddr, &iaddr_new)) {
+	if (!retrieveStringFromJsonObj(data.response, json_tag_iaddr, &iaddr_new)) {
 		syslog(LOG_WARNING, "Fail to retrieve internal address from response of onos.");
 		return -1;	
 	}
 			
-	if (!retrievePortNumberFromJsonObj(data.payload, json_tag_iport, &iport)) {
+	if (!retrievePortNumberFromJsonObj(data.response, json_tag_iport, &iport)) {
 		syslog(LOG_WARNING, "Fail to retrieve internal portnumber from response of onos.");
 		return -1;
 	}
 
-	if (!retrieveUnsignedIntFromJsonObj(data.payload, json_tag_duration, leaseduration)) {
+	if (!retrieveUnsignedIntFromJsonObj(data.response, json_tag_duration, leaseduration)) {
 		syslog(LOG_WARNING, "Fail to retrieve leaseduration from response of onos.");
 		return -1;
 	}
@@ -505,44 +540,54 @@ get_redirect_rule_by_index(int index, unsigned short * eport,
 	}
 
 	struct conn_runtime_vars data = { 
-		.request_params = jobj,
+		.request = jobj,
 		.done = false 
 	};
 
 	mg_http_connect(&mgr, controller_address, OnosGetIGDPortMappingByIndex, &data);
 	
 	while(!data.done) mg_mgr_poll(&mgr, 1000);
+	
+	if (data.response_code == NOTFOUND_404) {
+		syslog(LOG_WARNING, "Requested portmapping index is invalid.");
+		return -1;
+	} else if (data.response_code != OK_200) {
+		syslog(LOG_WARNING, "Got http error code %s during get portmapping by index action",
+										http_response_code_to_string[data.response_code]);
+		return -1;
+	}
+
 
 	const char * rhost_new, * proto_new, * iaddr_new;
-	if (!retrieveStringFromJsonObj(data.payload, json_tag_rhost, &rhost_new))
+	if (!retrieveStringFromJsonObj(data.response, json_tag_rhost, &rhost_new))
 	{
 		syslog(LOG_WARNING, "Fail to retrieve remote host from response of onos.");
 		return -1;
 	}
 		
-	if (!retrievePortNumberFromJsonObj(data.payload, json_tag_eport, eport)) 
+	if (!retrievePortNumberFromJsonObj(data.response, json_tag_eport, eport)) 
 	{
 		syslog(LOG_WARNING, "Fail to retrieve external port from response of onos.");
 		return -1;
 	}
 	
-	if (!retrieveStringFromJsonObj(data.payload, json_tag_proto, &proto_new)) 
+	if (!retrieveStringFromJsonObj(data.response, json_tag_proto, &proto_new)) 
 	{
 		syslog(LOG_WARNING, "Fail to retrieve protocol from response of onos.");
 		return -1;	
 	}
 			
-	if (!retrieveStringFromJsonObj(data.payload, json_tag_iaddr, &iaddr_new)) {
+	if (!retrieveStringFromJsonObj(data.response, json_tag_iaddr, &iaddr_new)) {
 		syslog(LOG_WARNING, "Fail to retrieve internal address from response of onos.");
 		return -1;	
 	}
 			
-	if (!retrievePortNumberFromJsonObj(data.payload, json_tag_iport, iport)) {
+	if (!retrievePortNumberFromJsonObj(data.response, json_tag_iport, iport)) {
 		syslog(LOG_WARNING, "Fail to retrieve internal portnumber from response of onos.");
 		return -1;
 	}
 
-	if (!retrieveUnsignedIntFromJsonObj(data.payload, json_tag_duration, leaseduration)) {
+	if (!retrieveUnsignedIntFromJsonObj(data.response, json_tag_duration, leaseduration)) {
 		syslog(LOG_WARNING, "Fail to retrieve leaseduration from response of onos.");
 		return -1;
 	}
@@ -553,29 +598,6 @@ get_redirect_rule_by_index(int index, unsigned short * eport,
 	strncpy(desc, "empty", desclen);
 	
 	return 0;
-}
-
-/* get_peer_rule_by_index()
- * return -1 when the rule was not found */
-int
-get_peer_rule_by_index(int index, unsigned short * eport,
-						char * iaddr, int iaddrlen, unsigned short * iport,
-						int * proto, char * desc, int desclen,
-						char * rhost, int rhostlen, unsigned short * rport,
-						unsigned int * timestamp,
-						u_int64_t * packets, u_int64_t * bytes)
-{
-	return -1;
-}
-
-/* delete_rule_and_commit() :
- * subfunction used in delete_redirect_and_filter_rules() */
-static int
-delete_rule_and_commit(unsigned int index,
-                       const char * miniupnpd_chain,
-                       const char * logcaller)
-{
-	return -1;
 }
 
 /* delete_redirect_and_filter_rules() */
@@ -594,7 +616,7 @@ delete_redirect_and_filter_rules(const char * rhost, unsigned short eport, const
 	}
 
 	struct conn_runtime_vars data = { 
-		.request_params = jobj,
+		.request = jobj,
 		.done = false 
 	};
 
@@ -602,13 +624,16 @@ delete_redirect_and_filter_rules(const char * rhost, unsigned short eport, const
 	
 	while(!data.done) mg_mgr_poll(&mgr, 1000);
 
-	int ret_code = 0;
-	if(!retrieveIntFromJsonObj(data.payload, json_tag_return_code, &ret_code)){
-		syslog(LOG_WARNING, "Fail to retrieve return code from reponses of onos.");
+	if (data.response_code == NOTFOUND_404) {
+		syslog(LOG_WARNING, "Requested portmapping does not exist.");
+		return -1;
+	} else if (data.response_code != OK_200) {
+		syslog(LOG_WARNING, "Got http error code %s during delete portmapping action",
+										http_response_code_to_string[data.response_code]);
 		return -1;
 	}
 
-	return ret_code;
+	return 0;
 }
 
 /* return an (malloc'ed) array of selected portmapping entries
@@ -634,7 +659,7 @@ get_portmappings_in_range(unsigned short startport, unsigned short endport,
 	}
 
 	struct conn_runtime_vars data = { 
-		.request_params = jobj,
+		.request = jobj,
 		.done = false 
 	};
 
@@ -642,7 +667,17 @@ get_portmappings_in_range(unsigned short startport, unsigned short endport,
 	
 	while(!data.done) mg_mgr_poll(&mgr, 1000);
 
-	if(!retrievePortmappingArrayFromJsonObj(data.payload, json_tag_portmapping, &array, number))
+	if (data.response_code == NOTFOUND_404) {
+		syslog(LOG_WARNING, "Requested range does not contain any portmapping entry.");
+		*number = 0;
+		return NULL;
+	} else if (data.response_code != OK_200) {
+		syslog(LOG_WARNING, "Got http error code %s during get portmapping range action",
+										http_response_code_to_string[data.response_code]);
+		return NULL;
+	}
+
+	if(!retrievePortmappingArrayFromJsonObj(data.response, json_tag_portmapping, &array, number))
 	{
 		syslog(LOG_WARNING, "Fail to retrieve portmappings from reponses of onos.");
 		return NULL;
@@ -673,7 +708,7 @@ delete_portmappings_in_range(unsigned short startport,
 	}
 
 	struct conn_runtime_vars data = { 
-		.request_params = jobj,
+		.request = jobj,
 		.done = false 
 	};
 
@@ -681,34 +716,26 @@ delete_portmappings_in_range(unsigned short startport,
 
 	while(!data.done) mg_mgr_poll(&mgr, 1000);
 
-	if (!retrievePortNumberArrayFromJsonObj(data.payload, json_tag_success, success_list, slist_number)) {
+	if (data.response_code == NOTFOUND_404) {
+		syslog(LOG_WARNING, "Requested range does not exist any portmapping.");
+		return -1;
+	} else if (data.response_code != OK_200) {
+		syslog(LOG_WARNING, "Got http error code %s during delete portmapping range action",
+										http_response_code_to_string[data.response_code]);
+		return -1;
+	}
+
+	if (!retrievePortNumberArrayFromJsonObj(data.response, json_tag_success, success_list, slist_number)) {
 		syslog(LOG_WARNING, "Fail to retrieve portnumbers from reponses of onos.");
 		return -1;
 	}
 
-	if (!retrievePortNumberArrayFromJsonObj(data.payload, json_tag_fail, fail_list, flist_number)) {
+	if (!retrievePortNumberArrayFromJsonObj(data.response, json_tag_fail, fail_list, flist_number)) {
 		syslog(LOG_WARNING, "Fail to retrieve portnumbers from reponses of onos.");
 		return -1;
 	}
 
 	return 0;
-}
-
-
-int
-update_portmapping(unsigned short eport, int proto,
-                   unsigned short iport, const char * desc,
-                   unsigned int timestamp)
-{
-	return -1;
-}
-
-int
-update_portmapping_desc_timestamp(unsigned short eport,
-					int proto, const char * desc,
-					unsigned int timestamp)
-{
-	return -1;
 }
 
 static bool

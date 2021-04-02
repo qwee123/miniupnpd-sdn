@@ -512,7 +512,9 @@ upnp_redirect_internal(const char * rhost, unsigned short eport,
 #ifdef ENABLE_EVENTS
 	/* the number of port mappings changed, we must
 	 * inform the subscribers */
-	upnp_event_var_change_notify(EWanIPC);
+	if (r == 0) {
+		upnp_event_var_change_notify(EWanIPC);
+	}
 #endif
 	return r;
 #else

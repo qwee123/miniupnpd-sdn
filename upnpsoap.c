@@ -1094,12 +1094,11 @@ DeletePortMappingRange(struct upnphttp * h, const char * action, const char * ns
 	r = upnp_delete_portmappings_in_range(startport, endport, protocol,
 						&success_list, &slist_size, &fail_list, &flist_size);
 
-	if(r < 0 || (slist_size == 0 && flist_size == 0))
+	if(r < 0)
 	{
 		SoapError(h, 730, "PortMappingNotFound");
 		ClearNameValueList(&data);
-		if (success_list != NULL)
-			printf("qwe\n");
+		if (success_list)
 			free(success_list);
 		if (fail_list)
 			free(fail_list);
@@ -1366,6 +1365,14 @@ http://www.upnp.org/schemas/gw/WANIPConnection-v2.xsd">
 
 	entry_list = upnp_get_portmappings_in_range(startport, endport,
 	                                           protocol, &list_size);
+
+	if (entry_list == NULL || list_size == 0) {
+		ClearNameValueList(&data);
+		SoapError(h, 730, "PortMappingNotFound");
+		free(entry_list);
+		entry_list = NULL;
+		return;
+	}
 
 	/* loop through port mappings */
 	for(i = 0; number > 0 && i < list_size; i++)

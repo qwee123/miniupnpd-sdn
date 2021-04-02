@@ -47,6 +47,41 @@ void sendDeleteRequest(struct mg_connection *c, struct http_options *options) {
     mg_printf(c, resp, options->req_url, options->host_len, options->host);
 }
 
+void retrieveResponseStatus(void *ev_data, struct conn_runtime_vars *data) {
+    struct mg_http_message *hm = (struct mg_http_message *) ev_data;
+
+    int status_code_len = 3;
+    char status_code_str[status_code_len+1];
+    strncpy(hm->uri.ptr, status_code_str, status_code_len);
+    status_code_str[status_code_len] = '\0';
+
+    int status_code = atoi(status_code_len);
+    switch (status_code) {
+        case 200:
+            data->response_code = OK_200;
+            break;
+        case 400:
+            data->response_code = BADREQUEST_400;
+            break;
+        case 404:
+            data->response_code = NOTFOUND_404;
+            break;
+        case 405:
+            data->response_code = METHODNOTALLOWED_405;
+            break;
+        case 409:
+            data->response_code = CONFLICT_409;
+            break;
+        case 500:
+            data->response_code = INTERNALSERVERERROR_500;
+            break;
+        default:
+            data->response_code = UNKNOWNERRORCODE;
+            syslog(LOG_WARNING, "Got unknown error code: %s\n", status_code_str);
+            break;
+    }
+}
+
 /*
  * Extract Json payload from the http request. The extracted json payload is then assigned
  * to data.
@@ -55,7 +90,7 @@ void retrieveJsonPayload(void *ev_data, struct conn_runtime_vars *data) {
     struct mg_http_message *hm = (struct mg_http_message *) ev_data;
     struct json_tokener * tokener = json_tokener_new();
 
-    data->payload = json_tokener_parse_ex(tokener, hm->body.ptr, hm->body.len);
+    data->response = json_tokener_parse_ex(tokener, hm->body.ptr, hm->body.len);
 
     json_tokener_free(tokener);
 }
@@ -118,6 +153,7 @@ void OnosAddIGDPortMapping(struct mg_connection *c, int ev, void *ev_data, void 
 
         sendPostRequest(c, &options);
     } else if (ev == MG_EV_HTTP_MSG) {
+        retrieveResponseStatus(ev_data, data);
         retrieveJsonPayload(ev_data, data);         
         c->is_closing = 1;
         data->done = true;
@@ -144,6 +180,7 @@ void OnosGetExtIpAddr(struct mg_connection *c, int ev, void *ev_data, void *fn_d
 
         sendGetRequest(c, &options);
     } else if (ev == MG_EV_HTTP_MSG) {
+        retrieveResponseStatus(ev_data, data);
         retrieveJsonPayload(ev_data, data);         
         c->is_closing = 1;
         data->done = true;
@@ -170,6 +207,7 @@ void OnosGetIGDRuntimeStatus(struct mg_connection *c, int ev, void *ev_data, voi
 
         sendGetRequest(c, &options);
     } else if (ev == MG_EV_HTTP_MSG) {
+        retrieveResponseStatus(ev_data, data);
         retrieveJsonPayload(ev_data, data);        
         c->is_closing = 1;
         data->done = true;
@@ -196,6 +234,7 @@ void OnosGetWanConnectionStatus(struct mg_connection *c, int ev, void *ev_data, 
 
         sendGetRequest(c, &options);
     } else if (ev == MG_EV_HTTP_MSG) {
+        retrieveResponseStatus(ev_data, data);
         retrieveJsonPayload(ev_data, data);        
         c->is_closing = 1;
         data->done = true;
@@ -222,6 +261,7 @@ void OnosGetIGDPortMappingByIndex(struct mg_connection *c, int ev, void *ev_data
 
         sendGetRequest(c, &options);
     } else if (ev == MG_EV_HTTP_MSG) {
+        retrieveResponseStatus(ev_data, data);
         retrieveJsonPayload(ev_data, data);        
         c->is_closing = 1;
         data->done = true;
@@ -248,6 +288,7 @@ void OnosGetIGDPortMapping(struct mg_connection *c, int ev, void *ev_data, void 
 
         sendGetRequest(c, &options);
     } else if (ev == MG_EV_HTTP_MSG) {
+        retrieveResponseStatus(ev_data, data);
         retrieveJsonPayload(ev_data, data);        
         c->is_closing = 1;
         data->done = true;
@@ -273,6 +314,7 @@ void OnosGetIGDPortMappingRange(struct mg_connection *c, int ev, void *ev_data, 
 
         sendGetRequest(c, &options);
     } else if (ev == MG_EV_HTTP_MSG) {
+        retrieveResponseStatus(ev_data, data);
         retrieveJsonPayload(ev_data, data);        
         c->is_closing = 1;
         data->done = true;
@@ -299,6 +341,7 @@ void OnosDeleteIGDPortMapping(struct mg_connection *c, int ev, void *ev_data, vo
 
         sendDeleteRequest(c, &options);
     } else if (ev == MG_EV_HTTP_MSG) {
+        retrieveResponseStatus(ev_data, data);
         retrieveJsonPayload(ev_data, data);        
         c->is_closing = 1;
         data->done = true;
@@ -325,6 +368,7 @@ void OnosDeleteIGDPortMappingRange(struct mg_connection *c, int ev, void *ev_dat
 
         sendDeleteRequest(c, &options);
     } else if (ev == MG_EV_HTTP_MSG) {
+        retrieveResponseStatus(ev_data, data);
         retrieveJsonPayload(ev_data, data);        
         c->is_closing = 1;
         data->done = true;
