@@ -480,6 +480,12 @@ AddPortMapping(struct upnphttp * h, const char * action, const char * ns)
 	}
 #endif
 
+#ifdef USE_SDN
+	if (!r_host) {
+		r_host = calloc(1, sizeof(char)); //init the r_host to an empty string
+	}
+#endif
+
 	/* IGD 2 MUST support both wildcard and specific IP address values
 	 * for RemoteHost (only the wildcard value was REQUIRED in release 1.0) */
 #ifndef SUPPORT_REMOTEHOST
@@ -687,6 +693,13 @@ AddAnyPortMapping(struct upnphttp * h, const char * action, const char * ns)
 		SoapError(h, 402, "Invalid Args");
 		return;
 	}
+
+#ifdef USE_SDN
+	if (!r_host) {
+		r_host = calloc(1, sizeof(char)); //init the r_host to an empty string
+	}
+#endif
+
 #ifndef SUPPORT_REMOTEHOST
 #ifdef UPNP_STRICT
 	if (r_host && (r_host[0] != '\0') && (0 != strcmp(r_host, "*")))
@@ -840,7 +853,7 @@ GetSpecificPortMappingEntry(struct upnphttp * h, const char * action, const char
 	ext_port = GetValueFromNameValueList(&data, "NewExternalPort");
 	protocol = GetValueFromNameValueList(&data, "NewProtocol");
 
-#if defined(UPNP_STRICT) || defined(USE_SDN)
+#ifdef UPNP_STRICT
 	if(!ext_port || !protocol || !r_host)
 #else
 	if(!ext_port || !protocol)
@@ -850,6 +863,13 @@ GetSpecificPortMappingEntry(struct upnphttp * h, const char * action, const char
 		SoapError(h, 402, "Invalid Args");
 		return;
 	}
+
+#ifdef USE_SDN
+	if (!r_host) {
+		r_host = calloc(1, sizeof(char)); //init the r_host to an empty string
+	}
+#endif
+
 #ifndef SUPPORT_REMOTEHOST
 #ifdef UPNP_STRICT
 	if (r_host && (r_host[0] != '\0') && (0 != strcmp(r_host, "*")))
@@ -1033,13 +1053,9 @@ DeletePortMappingRange(struct upnphttp * h, const char * action, const char * ns
 	const char * startport_s, * endport_s;
 	unsigned short startport, endport;
 	/*int manage;*/
-#ifdef USE_SDN
-	unsigned short * success_list = NULL, * fail_list = NULL;
-	unsigned int slist_size = 0, flist_size = 0;
-#else
 	unsigned short * entry_list;
 	unsigned int list_size = 0;
-#endif
+
 
 	ParseNameValue(h->req_buf + h->req_contentoff, h->req_contentlen, &data);
 	startport_s = GetValueFromNameValueList(&data, "NewStartPort");
@@ -1072,36 +1088,23 @@ DeletePortMappingRange(struct upnphttp * h, const char * action, const char * ns
 	
 #ifdef USE_SDN;
 	r = upnp_delete_portmappings_in_range(startport, endport, protocol,
-						&success_list, &slist_size, &fail_list, &flist_size);
+						&entry_list, &list_size);
 
-	if(r < 0 || (slist_size == 0 && flist_size == 0))
+	if(r < 0 || list_size <= 0)
 	{
 		SoapError(h, 730, "PortMappingNotFound");
 		ClearNameValueList(&data);
-		if (success_list != NULL)
-			printf("qwe\n");
-			free(success_list);
-		if (fail_list)
-			free(fail_list);
+		if (entry_list && list_size > 0)
+			free(entry_list);
 		return;
 	}
 
-	for(unsigned int i = 0; i < slist_size; i++)
+	for(unsigned int i = 0; i < list_size; i++)
 	{
 		syslog(LOG_INFO, "%s: deleting external port: %hu, protocol: %s: success",
-		       action, success_list[i], protocol);
+		       action, entry_list[i], protocol);
 	}
-
-	for(unsigned int i = 0; i < flist_size; i++)
-	{
-		syslog(LOG_INFO, "%s: deleting external port: %hu, protocol: %s: fail",
-		       action, fail_list[i], protocol);
-	}
-
-	if (success_list)
-		free(success_list);
-	if (fail_list)
-		free(fail_list);
+	free(entry_list);
 #else
 	entry_list = upnp_get_portmappings_in_range(startport, endport,
 	                                           protocol, &list_size);
@@ -1186,7 +1189,6 @@ GetGenericPortMappingEntry(struct upnphttp * h, const char * action, const char 
 
 	syslog(LOG_INFO, "%s: index=%d", action, (int)index);
 
-	rhost[0] = '\0';
 	r = upnp_get_redirection_infos_by_index((int)index, &eport, protocol, &iport,
                                             iaddr, sizeof(iaddr),
 	                                        desc, sizeof(desc),
@@ -1347,6 +1349,14 @@ http://www.upnp.org/schemas/gw/WANIPConnection-v2.xsd">
 
 	entry_list = upnp_get_portmappings_in_range(startport, endport,
 	                                           protocol, &list_size);
+
+	if (entry_list == NULL || list_size == 0) {
+		ClearNameValueList(&data);
+		SoapError(h, 730, "PortMappingNotFound");
+		free(entry_list);
+		entry_list = NULL;
+		return;
+	}
 
 	/* loop through port mappings */
 	for(i = 0; number > 0 && i < list_size; i++)
@@ -2419,7 +2429,7 @@ soapMethods[] =
 	{ "GetExternalIPAddress", GetExternalIPAddress},
 	{ "AddPortMapping", AddPortMapping},
 	{ "DeletePortMapping", DeletePortMapping},
-	{ "GetGenericPortMappingEntry", GetGenericPortMappingEntry}, //
+	{ "GetGenericPortMappingEntry", GetGenericPortMappingEntry},
 	{ "GetSpecificPortMappingEntry", GetSpecificPortMappingEntry},
 /* Required in WANIPConnection:2 */
 	{ "SetConnectionType", SetConnectionType},

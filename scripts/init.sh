@@ -4,7 +4,9 @@ onos_nfv_network=onosnfv
 controller_address=
 controller_port=
 controller_container_name=
-client_gateway=172.17.1.1
+client_gateway=172.16.0.1
+miniupnpd_addr=172.16.0.10
+miniupnpd_version=v4
 
 if [ -z "$1" ]; then
 	echo "Please Specify an experiment situation, it's either 'pytest' or 'onos'"
@@ -53,18 +55,18 @@ if [ "$(docker ps -aq -f name='^miniupnpd-sdn$')" ]; then
 	docker stop miniupnpd-sdn && docker rm miniupnpd-sdn
 fi
 
-docker run -itd --name miniupnpd-sdn --cap-add NET_ADMIN --cap-add NET_BROADCAST --network ${onos_nfv_network} miniupnpd-sdn:v1
+docker run -itd --name miniupnpd-sdn --cap-add NET_ADMIN --cap-add NET_BROADCAST --network ${onos_nfv_network} miniupnpd-sdn:${miniupnpd_version}
 
 clientname=
 for i in $(seq 1 2)
 do
 	clientname=client${i}
 	docker run -itd --name ${clientname} --net none --cap-add NET_ADMIN py_test_client
-	ovs-docker add-port ovs-s1 eth0 ${clientname} --ipaddress=172.17.1.$((i+1))/24
+	ovs-docker add-port ovs-s1 eth0 ${clientname} --ipaddress=172.16.0.$((i+1))/24
 	docker exec ${clientname} ip route add default via ${client_gateway}
 done
 
-ovs-docker add-port ovs-s2 eth1 miniupnpd-sdn  --ipaddress=172.17.1.10/24
+ovs-docker add-port ovs-s2 eth1 miniupnpd-sdn  --ipaddress=${miniupnpd_addr}/24
 
 if [ "$1" == onos ]; then
 	echo "set ovs-controller connection"

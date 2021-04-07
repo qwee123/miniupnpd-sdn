@@ -4,6 +4,19 @@
 #include "mongoose/mongoose.h"
 #include "json/json_object.h"
 
+enum http_response_code {
+    OK_200,
+    BADREQUEST_400,
+    NOTFOUND_404,
+    METHODNOTALLOWED_405,
+    CONFLICT_409,
+    INTERNALSERVERERROR_500,
+    UNKNOWNERRORCODE
+};
+
+static char *http_response_code_to_string[] =
+    { "200", "400", "404", "405", "409," "500", "UnknownCode" };
+
 struct http_options {
     const char * req_url;
     const char * host;
@@ -11,8 +24,9 @@ struct http_options {
 };
 
 struct conn_runtime_vars {
-    json_object * request_params;
-    json_object * payload;
+    json_object * request;
+    json_object * response;
+    enum http_response_code response_code;
     bool done;
 };
 

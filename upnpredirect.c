@@ -409,6 +409,11 @@ upnp_redirect(const char * rhost, unsigned short eport,
 #ifdef USE_SDN
 	syslog(LOG_INFO, "redirecting port %hu to %s:%hu protocol %s",
 		eport, iaddr, iport, proto);
+
+	/** 
+	 * Pass all requested parameters to the remote onos server.
+	 * If action is valid, return 0, otherwise return 1.
+	*/
 	return upnp_redirect_internal(rhost, eport, iaddr, iport, proto,
 								desc, leaseduration, automode, ret_eport);
 #else
@@ -507,7 +512,9 @@ upnp_redirect_internal(const char * rhost, unsigned short eport,
 #ifdef ENABLE_EVENTS
 	/* the number of port mappings changed, we must
 	 * inform the subscribers */
-	upnp_event_var_change_notify(EWanIPC);
+	if (r == 0) {
+		upnp_event_var_change_notify(EWanIPC);
+	}
 #endif
 	return r;
 #else
@@ -600,7 +607,9 @@ upnp_get_redirection_infos_by_index(int index,
                                     char * rhost, int rhostlen,
                                     unsigned int * leaseduration)
 {
-	if(desc && (desclen > 0))
+	if(iaddr && (iaddrlen > 0))
+		iaddr[0] = '\0';
+ 	if(desc && (desclen > 0))
 		desc[0] = '\0';
 	if(rhost && (rhostlen > 0))
 		rhost[0] = '\0';
@@ -884,14 +893,13 @@ int
 upnp_delete_portmappings_in_range(unsigned short startport,
                                unsigned short endport,
                                const char * protocol,
-                               unsigned short ** success_list, unsigned int * slist_number,
-							   unsigned short ** fail_list, unsigned int * flist_number)
+                               unsigned short ** entry_list, unsigned int * list_number)
 {
-	if(!slist_number || !flist_number)
+	if(!list_number || !entry_list)
 		return -1;
 
 	return delete_portmappings_in_range(startport, endport, protocol,
-					success_list, slist_number, fail_list, flist_number);
+					entry_list, list_number);
 }
 
 /* stuff for miniupnpdctl */
