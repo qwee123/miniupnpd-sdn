@@ -1053,13 +1053,9 @@ DeletePortMappingRange(struct upnphttp * h, const char * action, const char * ns
 	const char * startport_s, * endport_s;
 	unsigned short startport, endport;
 	/*int manage;*/
-#ifdef USE_SDN
-	unsigned short * success_list = NULL, * fail_list = NULL;
-	unsigned int slist_size = 0, flist_size = 0;
-#else
 	unsigned short * entry_list;
 	unsigned int list_size = 0;
-#endif
+
 
 	ParseNameValue(h->req_buf + h->req_contentoff, h->req_contentlen, &data);
 	startport_s = GetValueFromNameValueList(&data, "NewStartPort");
@@ -1092,35 +1088,23 @@ DeletePortMappingRange(struct upnphttp * h, const char * action, const char * ns
 	
 #ifdef USE_SDN;
 	r = upnp_delete_portmappings_in_range(startport, endport, protocol,
-						&success_list, &slist_size, &fail_list, &flist_size);
+						&entry_list, &list_size);
 
-	if(r < 0)
+	if(r < 0 || list_size <= 0)
 	{
 		SoapError(h, 730, "PortMappingNotFound");
 		ClearNameValueList(&data);
-		if (success_list)
-			free(success_list);
-		if (fail_list)
-			free(fail_list);
+		if (entry_list && list_size > 0)
+			free(entry_list);
 		return;
 	}
 
-	for(unsigned int i = 0; i < slist_size; i++)
+	for(unsigned int i = 0; i < list_size; i++)
 	{
 		syslog(LOG_INFO, "%s: deleting external port: %hu, protocol: %s: success",
-		       action, success_list[i], protocol);
+		       action, entry_list[i], protocol);
 	}
-
-	for(unsigned int i = 0; i < flist_size; i++)
-	{
-		syslog(LOG_INFO, "%s: deleting external port: %hu, protocol: %s: fail",
-		       action, fail_list[i], protocol);
-	}
-
-	if (success_list)
-		free(success_list);
-	if (fail_list)
-		free(fail_list);
+	free(entry_list);
 #else
 	entry_list = upnp_get_portmappings_in_range(startport, endport,
 	                                           protocol, &list_size);

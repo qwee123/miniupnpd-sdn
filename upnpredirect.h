@@ -150,8 +150,7 @@ int
 upnp_delete_portmappings_in_range(unsigned short startport,
                                unsigned short endport,
                                const char * protocol,
-                               unsigned short ** success_list, unsigned int * slist_number,
-							   unsigned short ** fail_list, unsigned int * flist_number);
+                               unsigned short ** entry_list, unsigned int * list_number);
 #endif
 
 /* stuff for responding to miniupnpdctl */

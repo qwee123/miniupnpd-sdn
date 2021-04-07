@@ -14,7 +14,7 @@ static const char *uri_extipaddr = "/stats/extipaddr";
 static const char *uri_igdiface_status = "/stats/iface";
 static const char *uri_wanconnstatus = "/stats/wanconnstatus";
 static const char *uri_portmapping = "/portmapping";
-static const char *uri_portmapping_portrange = "/portmapping/portrange";
+static const char *uri_portmapping_portrange = "/portmapping/range";
 static const char *uri_portmapping_index = "/portmapping/index";
 
 void sendGetRequest(struct mg_connection *c, struct http_options *options) {
@@ -27,24 +27,58 @@ void sendGetRequest(struct mg_connection *c, struct http_options *options) {
     mg_printf(c, resp, options->req_url, options->host_len, options->host);
 }
 
-void sendPostRequest(struct mg_connection *c, struct http_options *options) {
+void sendGetRequestWithPayload(struct mg_connection *c, struct http_options *options, json_object * payload) {
+
+   static const char resp[] =
+        "GET %s HTTP/1.1\r\n"
+        "Host: %.*s\r\n"
+        "Content-length: %d\r\n"        
+        "\r\n"
+        "%.*s\r\n";
+        
+    size_t payload_len;
+    const char * post_payload =
+        json_object_to_json_string_length(payload, JSON_C_TO_STRING_PLAIN, &payload_len);
+
+    mg_printf(c, resp, options->req_url,
+        options->host_len, options->host, payload_len,
+        payload_len, post_payload);
+}
+
+void sendPostRequest(struct mg_connection *c, struct http_options *options, json_object * payload) {
 
     static const char resp[] =
         "POST %s HTTP/1.1\r\n"
-        "Host: %.*s\r\n"        
-        "\r\n";
-    
-    mg_printf(c, resp, options->req_url, options->host_len, options->host);
+        "Host: %.*s\r\n"
+        "Content-length: %d\r\n"        
+        "\r\n"
+        "%.*s\r\n";
+        
+    size_t payload_len;
+    const char * post_payload =
+        json_object_to_json_string_length(payload, JSON_C_TO_STRING_PLAIN, &payload_len);
+
+    mg_printf(c, resp, options->req_url,
+        options->host_len, options->host, payload_len,
+        payload_len, post_payload);
 }
 
-void sendDeleteRequest(struct mg_connection *c, struct http_options *options) {
+void sendDeleteRequest(struct mg_connection *c, struct http_options *options, json_object * payload) {
 
     static const char resp[] =
         "DELETE %s HTTP/1.1\r\n"
         "Host: %.*s\r\n"        
-        "\r\n";
+        "Content-length: %d\r\n"        
+        "\r\n"
+        "%.*s\r\n";
     
-    mg_printf(c, resp, options->req_url, options->host_len, options->host);
+    size_t payload_len;
+    const char * post_payload =
+        json_object_to_json_string_length(payload, JSON_C_TO_STRING_PLAIN, &payload_len);
+
+    mg_printf(c, resp, options->req_url,
+        options->host_len, options->host, payload_len,
+        payload_len, post_payload);
 }
 
 void retrieveResponseStatus(void *ev_data, struct conn_runtime_vars *data) {
@@ -52,10 +86,10 @@ void retrieveResponseStatus(void *ev_data, struct conn_runtime_vars *data) {
 
     int status_code_len = 3;
     char status_code_str[status_code_len+1];
-    strncpy(hm->uri.ptr, status_code_str, status_code_len);
+    strncpy(status_code_str, hm->uri.ptr, status_code_len);
     status_code_str[status_code_len] = '\0';
 
-    int status_code = atoi(status_code_len);
+    int status_code = atoi(status_code_str);
     switch (status_code) {
         case 200:
             data->response_code = OK_200;
@@ -134,6 +168,9 @@ void OnosCheckAlive(struct mg_connection *c, int ev, void *ev_data, void *fn_dat
         
         syslog(LOG_WARNING, "Fail to connect to ONOS");
         *(bool *) fn_data = true;  // Error, tell event loop to stop
+    } else if (ev == MG_EV_CLOSE) {
+        syslog(LOG_WARNING, "Connection to onos is closed.");
+        *(bool *) fn_data = true;
     }
 }
 
@@ -151,7 +188,7 @@ void OnosAddIGDPortMapping(struct mg_connection *c, int ev, void *ev_data, void 
         options.host = host.ptr;
         options.host_len = host.len;
 
-        sendPostRequest(c, &options);
+        sendPostRequest(c, &options, data->request);
     } else if (ev == MG_EV_HTTP_MSG) {
         retrieveResponseStatus(ev_data, data);
         retrieveJsonPayload(ev_data, data);         
@@ -160,6 +197,9 @@ void OnosAddIGDPortMapping(struct mg_connection *c, int ev, void *ev_data, void 
     } else if (ev == MG_EV_ERROR) {
         syslog(LOG_WARNING, "Fail to connect to ONOS");
         data->done = true;  // Error, tell event loop to stop
+    } else if (ev == MG_EV_CLOSE) {
+        syslog(LOG_WARNING, "Connection to onos is closed.");
+        data->done = true;
     }
     return ;
 }
@@ -187,7 +227,11 @@ void OnosGetExtIpAddr(struct mg_connection *c, int ev, void *ev_data, void *fn_d
     } else if (ev == MG_EV_ERROR) {
         syslog(LOG_WARNING, "Fail to connect to ONOS");
         data->done = true;  // Error, tell event loop to stop
+    }  else if (ev == MG_EV_CLOSE) {
+        syslog(LOG_WARNING, "Connection to onos is closed.");
+        data->done = true;
     }
+
     return ;
 }
 
@@ -214,7 +258,11 @@ void OnosGetIGDRuntimeStatus(struct mg_connection *c, int ev, void *ev_data, voi
     } else if (ev == MG_EV_ERROR) {
         syslog(LOG_WARNING, "Fail to connect to ONOS");
         data->done = true;  // Error, tell event loop to stop
+    }  else if (ev == MG_EV_CLOSE) {
+        syslog(LOG_WARNING, "Connection to onos is closed.");
+        data->done = true;
     }
+
     return ;
 }
 
@@ -241,7 +289,11 @@ void OnosGetWanConnectionStatus(struct mg_connection *c, int ev, void *ev_data, 
     } else if (ev == MG_EV_ERROR) {
         syslog(LOG_WARNING, "Fail to connect to ONOS");
         data->done = true;  // Error, tell event loop to stop
+    }  else if (ev == MG_EV_CLOSE) {
+        syslog(LOG_WARNING, "Connection to onos is closed.");
+        data->done = true;
     }
+
     return ;
 }
 
@@ -268,7 +320,11 @@ void OnosGetIGDPortMappingByIndex(struct mg_connection *c, int ev, void *ev_data
     } else if (ev == MG_EV_ERROR) {
         syslog(LOG_WARNING, "Fail to connect to ONOS");
         data->done = true;  // Error, tell event loop to stop
+    } else if (ev == MG_EV_CLOSE) {
+        syslog(LOG_WARNING, "Connection to onos is closed.");
+        data->done = true;
     }
+
     return ;
 }
 
@@ -295,7 +351,11 @@ void OnosGetIGDPortMapping(struct mg_connection *c, int ev, void *ev_data, void 
     } else if (ev == MG_EV_ERROR) {
         syslog(LOG_WARNING, "Fail to connect to ONOS");
         data->done = true;  // Error, tell event loop to stop
+    } else if (ev == MG_EV_CLOSE) {
+        syslog(LOG_WARNING, "Connection to onos is closed.");
+        data->done = true;
     }
+
     return ;
 }
 
@@ -312,7 +372,7 @@ void OnosGetIGDPortMappingRange(struct mg_connection *c, int ev, void *ev_data, 
         options.host = host.ptr;
         options.host_len = host.len;
 
-        sendGetRequest(c, &options);
+        sendGetRequestWithPayload(c, &options, data->request);
     } else if (ev == MG_EV_HTTP_MSG) {
         retrieveResponseStatus(ev_data, data);
         retrieveJsonPayload(ev_data, data);        
@@ -321,7 +381,11 @@ void OnosGetIGDPortMappingRange(struct mg_connection *c, int ev, void *ev_data, 
     } else if (ev == MG_EV_ERROR) {
         syslog(LOG_WARNING, "Fail to connect to ONOS");
         data->done = true;  // Error, tell event loop to stop
+    }  else if (ev == MG_EV_CLOSE) {
+        syslog(LOG_WARNING, "Connection to onos is closed.");
+        data->done = true;
     }
+
     return ;
 }
 
@@ -339,7 +403,7 @@ void OnosDeleteIGDPortMapping(struct mg_connection *c, int ev, void *ev_data, vo
         options.host = host.ptr;
         options.host_len = host.len;
 
-        sendDeleteRequest(c, &options);
+        sendDeleteRequest(c, &options, data->request);
     } else if (ev == MG_EV_HTTP_MSG) {
         retrieveResponseStatus(ev_data, data);
         retrieveJsonPayload(ev_data, data);        
@@ -348,7 +412,11 @@ void OnosDeleteIGDPortMapping(struct mg_connection *c, int ev, void *ev_data, vo
     } else if (ev == MG_EV_ERROR) {
         syslog(LOG_WARNING, "Fail to connect to ONOS");
         data->done = true;  // Error, tell event loop to stop
+    } else if (ev == MG_EV_CLOSE) {
+        syslog(LOG_WARNING, "Connection to onos is closed.");
+        data->done = true;
     }
+
     return ;
 }
 
@@ -366,7 +434,7 @@ void OnosDeleteIGDPortMappingRange(struct mg_connection *c, int ev, void *ev_dat
         options.host = host.ptr;
         options.host_len = host.len;
 
-        sendDeleteRequest(c, &options);
+        sendDeleteRequest(c, &options, data->request);
     } else if (ev == MG_EV_HTTP_MSG) {
         retrieveResponseStatus(ev_data, data);
         retrieveJsonPayload(ev_data, data);        
@@ -375,6 +443,10 @@ void OnosDeleteIGDPortMappingRange(struct mg_connection *c, int ev, void *ev_dat
     } else if (ev == MG_EV_ERROR) {
         syslog(LOG_WARNING, "Fail to connect to ONOS");
         data->done = true;  // Error, tell event loop to stop
+    } else if (ev == MG_EV_CLOSE) {
+        syslog(LOG_WARNING, "Connection to onos is closed.");
+        data->done = true;
     }
+
     return ;
 }

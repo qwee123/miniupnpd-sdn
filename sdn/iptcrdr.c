@@ -52,9 +52,8 @@ static const char * json_tag_iport = "iport";
 static const char * json_tag_duration = "duration";
 static const char * json_tag_auto = "autoselect"; // To distinquish AddAny and normal Add method
 static const char * json_tag_return_code = "return_code";
-/* success and failure are tags for deletePortmappings_in_range method */
-static const char * json_tag_success = "success";
-static const char * json_tag_fail = "failure";
+/* deleted is a tag for deletePortmappings_in_range method */
+static const char * json_tag_deleted = "deleted";
 
 static struct mg_mgr mgr;
 
@@ -144,7 +143,7 @@ int get_sdn_igd_external_ip_addr(char * ret_addr, size_t max_len)
 int get_sdn_igd_wan_conn_status(void) {
 	struct conn_runtime_vars data = { .done = false };
 	mg_http_connect(&mgr, controller_address, OnosGetWanConnectionStatus, &data);
-	
+
 	while(!data.done) mg_mgr_poll(&mgr, 1000);
 
 	if (data.response_code != OK_200) {
@@ -175,9 +174,9 @@ int get_sdn_igd_iface_status(struct igd_iface_status * ret_data)
 {
 	struct conn_runtime_vars data = { .done = false };
 	mg_http_connect(&mgr, controller_address, OnosGetIGDRuntimeStatus, &data);
-	
-	while(!data.done) mg_mgr_poll(&mgr, 1000);
 
+	while(!data.done) mg_mgr_poll(&mgr, 1000);
+	
 	char *iface_status;
 	unsigned int baudrate, bytes_sent, bytes_recv, pkt_sent, pkt_recv;
 
@@ -308,8 +307,8 @@ _add_redirect_and_filter_rules(const char * rhost, unsigned short eport,
 					unsigned short * final_eport)
 {
 	struct json_object *jobj = json_object_new_object();
-	
-	if (json_object_object_add(jobj, json_tag_rhost, json_object_new_string(rhost) < 0)
+
+	if (json_object_object_add(jobj, json_tag_rhost, json_object_new_string(rhost)) < 0
 		|| json_object_object_add(jobj, json_tag_eport, json_object_new_int(eport)) < 0
 	    || json_object_object_add(jobj, json_tag_proto, json_object_new_string(proto)) < 0
 		|| json_object_object_add(jobj, json_tag_iport, json_object_new_int(iport)) < 0
@@ -325,7 +324,7 @@ _add_redirect_and_filter_rules(const char * rhost, unsigned short eport,
 		.request = jobj,
 		.done = false 
 	};
-
+	//printf("jobj from str:\n---\n%s\n---\n", json_object_to_json_string_ext(data.request, JSON_C_TO_STRING_SPACED | JSON_C_TO_STRING_PRETTY));
 	mg_http_connect(&mgr, controller_address, OnosAddIGDPortMapping, &data);
 	
 	while(!data.done) mg_mgr_poll(&mgr, 1000);
@@ -379,7 +378,7 @@ add_redirect_and_filter_rules(const char * rhost, unsigned short eport,
 			return 0;
 		case 0:
 			return 0;
-		case -2: //Conflicted -> ConflictWithOtherMechanisms
+		case -2: //ConflictedWithOtherMechanism -> ConflictWithOtherMechanisms
 			return -4;
 		case -3: //Existed -> ConflictInMappingEntry
 			return -2;
@@ -404,7 +403,7 @@ add_any_redirect_and_filter_rules(const char * rhost, unsigned short eport,
 		case 0:  
 			*ret = final_eport;
 			return 0;
-		case -2: //Conflicted -> ActionFailed
+		case -2: //ConflictedWithOtherMechanism -> ActionFailed
 			syslog(LOG_WARNING, "AddAnyRedirect method received error code: Conflicted, but it shouldn't.");
 			return -1;
 		case -3: //NoAvailable -> NoPortMapsAvailable
@@ -414,26 +413,6 @@ add_any_redirect_and_filter_rules(const char * rhost, unsigned short eport,
 	}
 }
 
-/* add_peer_redirect_rule2() */
-int
-add_peer_redirect_rule2(const char * rhost, unsigned short rport,
-                   const char * eaddr, unsigned short eport,
-                   const char * iaddr, unsigned short iport, int proto,
-                   const char * desc, unsigned int timestamp)
-{
-	int r;
-
-	return -1;
-}
-
-int
-add_peer_dscp_rule2(const char * rhost, unsigned short rport,
-                    unsigned char dscp, const char * iaddr, 
-					unsigned short iport, int proto,
-                    const char * desc, unsigned int timestamp)
-{
-	return -1;
-}
 
 /* get_redirect_rule()
  * returns -1 if the rule is not found */
@@ -446,7 +425,6 @@ get_redirect_rule(unsigned short eport, const char * proto,
                   u_int64_t * packets, u_int64_t * bytes)
 {
 	struct json_object *jobj = json_object_new_object();
-
 	//use json_int seems to be safe to convert an unsigned short after testing.
 	if (json_object_object_add(jobj, json_tag_rhost, json_object_new_string(rhost)) < 0
 		|| json_object_object_add(jobj, json_tag_eport, json_object_new_int(eport)) < 0
@@ -531,7 +509,7 @@ get_redirect_rule_by_index(int index, unsigned short * eport,
 {
 	struct json_object *jobj = json_object_new_object();
 
-	if (json_object_object_add(jobj, "index", json_object_new_int(index) < 0)) {
+	if (json_object_object_add(jobj, "index", json_object_new_int(index)) < 0) {
 		syslog(LOG_WARNING, "Fail to retrieve inputs of get_portmapping_index method.");
 		return -1;
 	}
@@ -604,7 +582,7 @@ delete_redirect_and_filter_rules(const char * rhost, unsigned short eport, const
 	struct json_object *jobj = json_object_new_object();
 
 	//use json_int seems to be safe to convert an unsigned short after testing.
-	if (json_object_object_add(jobj, json_tag_rhost, json_object_new_string(rhost) < 0)
+	if (json_object_object_add(jobj, json_tag_rhost, json_object_new_string(rhost)) < 0
 		|| json_object_object_add(jobj, json_tag_eport, json_object_new_int(eport)) < 0
 	    || json_object_object_add(jobj, json_tag_proto, json_object_new_string(proto)) < 0)
 	{
@@ -646,7 +624,7 @@ get_portmappings_in_range(unsigned short startport, unsigned short endport,
 	struct json_object *jobj = json_object_new_object();
 
 	//use json_int seems to be safe to convert an unsigned short after testing.
-	if (json_object_object_add(jobj, "proto", json_object_new_string(proto) < 0)
+	if (json_object_object_add(jobj, "proto", json_object_new_string(proto)) < 0
 		|| json_object_object_add(jobj, "start_port_num", json_object_new_int(startport)) < 0
 	    || json_object_object_add(jobj, "end_port_num", json_object_new_int(endport)) < 0
 		|| json_object_object_add(jobj, "max_entry_number", json_object_new_uint64(capacity)) < 0)
@@ -690,13 +668,12 @@ get_portmappings_in_range(unsigned short startport, unsigned short endport,
 int
 delete_portmappings_in_range(unsigned short startport, 
                     unsigned short endport, const char * proto,	
-                    unsigned short ** success_list, unsigned int * slist_number,
-					unsigned short ** fail_list, unsigned int * flist_number)
+                    unsigned short ** entry_list, unsigned int * list_number)
 {
 	struct json_object *jobj = json_object_new_object();
 
 	//use json_int seems to be safe to convert an unsigned short after testing.
-	if (json_object_object_add(jobj, "proto", json_object_new_string(proto) < 0)
+	if (json_object_object_add(jobj, "proto", json_object_new_string(proto)) < 0
 		|| json_object_object_add(jobj, "start_port_num", json_object_new_int(startport)) < 0
 	    || json_object_object_add(jobj, "end_port_num", json_object_new_int(endport)) < 0)
 	{
@@ -722,12 +699,7 @@ delete_portmappings_in_range(unsigned short startport,
 		return -1;
 	}
 
-	if (!retrievePortNumberArrayFromJsonObj(data.response, json_tag_success, success_list, slist_number)) {
-		syslog(LOG_WARNING, "Fail to retrieve portnumbers from reponses of onos.");
-		return -1;
-	}
-
-	if (!retrievePortNumberArrayFromJsonObj(data.response, json_tag_fail, fail_list, flist_number)) {
+	if (!retrievePortNumberArrayFromJsonObj(data.response, json_tag_deleted, entry_list, list_number)) {
 		syslog(LOG_WARNING, "Fail to retrieve portnumbers from reponses of onos.");
 		return -1;
 	}
