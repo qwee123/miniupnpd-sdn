@@ -51,6 +51,9 @@ static const char * json_tag_iaddr = "iaddr";
 static const char * json_tag_iport = "iport";
 static const char * json_tag_duration = "duration";
 static const char * json_tag_auto = "autoselect"; // To distinquish AddAny and normal Add method
+static const char * json_tag_permit_port_range = "permit_port_range";
+static const char * json_tag_permit_port_range_max = "max";
+static const char * json_tag_permit_port_range_min = "min";
 static const char * json_tag_return_code = "return_code";
 /* deleted is a tag for deletePortmappings_in_range method */
 static const char * json_tag_deleted = "deleted";
@@ -86,6 +89,8 @@ static bool
 retrievePortmappingArrayFromJsonObj(struct json_object *jobj,
 			 const char *key, struct portmapping_entry ** ret, unsigned int * cap);
 
+static int
+strcmpcaseignore(const char * proto_new, const char * proto);
 
 /*
  * To printout a json object:
@@ -319,6 +324,20 @@ _add_redirect_and_filter_rules(const char * rhost, unsigned short eport,
 		syslog(LOG_WARNING, "Fail to retrieve inputs of add_redirect_and_filter_rules method.");
 		return -1;
 	}
+	
+	// max_port_range and min_port_range use constants temporarily, should be fixed ASAP.
+	if (automode) {
+		struct json_object *permit_port_range = json_object_new_object();
+		if (json_object_object_add(permit_port_range, 
+				json_tag_permit_port_range_max, json_object_new_int(65535)) < 0
+			|| json_object_object_add(permit_port_range, 
+				json_tag_permit_port_range_min, json_object_new_int(1024)) < 0
+			|| json_object_object_add(jobj, json_tag_permit_port_range, permit_port_range) < 0)
+		{
+			syslog(LOG_WARNING, "Fail to retrieve permit_port_range of add_redirect_and_filter_rules method.");
+			return -1;
+		}
+	}
 
 	struct conn_runtime_vars data = { 
 		.request = jobj,
@@ -453,10 +472,12 @@ get_redirect_rule(unsigned short eport, const char * proto,
 	}
 
 	const char * rhost_new, * proto_new, * iaddr_new;
-	unsigned short eport_new, iport_new;
-	if (!retrieveStringFromJsonObj(data.response, json_tag_rhost, &rhost_new))
+	unsigned short eport_new;
+	if (!retrieveStringFromJsonObj(data.response, json_tag_rhost, &rhost_new)
+		|| strcmp(rhost_new, rhost) != 0)
 	{
-		syslog(LOG_WARNING, "Fail to retrieve remote host from response of onos.");
+		syslog(LOG_WARNING, "Fail to retrieve remote host from response of onos."
+			" Or the received rhost is not equeal to the requested one.");
 		return -1;
 	}
 		
@@ -464,15 +485,15 @@ get_redirect_rule(unsigned short eport, const char * proto,
 		|| eport_new != eport)
 	{
 		syslog(LOG_WARNING, "Fail to retrieve external port from response of onos."
-			"Or the received external port is not equeal to the requested one.");
+			" Or the received external port is not equeal to the requested one.");
 		return -1;
 	}
-	
+
 	if (!retrieveStringFromJsonObj(data.response, json_tag_proto, &proto_new)
-		|| strcmp(proto_new, proto) != 0) 
+		|| strcmpcaseignore(proto_new, proto) != 0) 
 	{
 		syslog(LOG_WARNING, "Fail to retrieve protocol from response of onos."
-			"Or the received protocol is not equeal to the requested one.");
+			" Or the received protocol is not equeal to the requested one.");
 		return -1;	
 	}
 			
@@ -481,7 +502,7 @@ get_redirect_rule(unsigned short eport, const char * proto,
 		return -1;	
 	}
 			
-	if (!retrievePortNumberFromJsonObj(data.response, json_tag_iport, &iport)) {
+	if (!retrievePortNumberFromJsonObj(data.response, json_tag_iport, iport)) {
 		syslog(LOG_WARNING, "Fail to retrieve internal portnumber from response of onos.");
 		return -1;
 	}
@@ -491,6 +512,7 @@ get_redirect_rule(unsigned short eport, const char * proto,
 		return -1;
 	}
 
+	eport = eport_new;
 	strncpy(iaddr, iaddr_new, iaddrlen);
 	strncpy(desc, "empty", desclen);
 
@@ -775,7 +797,6 @@ retrievePortNumberFromJsonObj(struct json_object *jobj, const char *key, unsigne
 	}
 
 	*ret = (unsigned short)json_int;
-
 	return true;
 }
 
@@ -880,4 +901,13 @@ retrievePortmappingArrayFromJsonObj(struct json_object *jobj, const char *key,
 	*ret = array;
 	*ret_size = index;
 	return true;
+}
+
+static int
+strcmpcaseignore(const char * proto_new, const char * proto) {
+	for(char *ptr = proto_new;*ptr;ptr++) *ptr = tolower(*ptr);
+
+	for(char *ptr = proto;*ptr;ptr++) *ptr = tolower(*ptr);
+
+	return strcmp(proto_new, proto);
 }

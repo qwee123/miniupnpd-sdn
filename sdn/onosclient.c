@@ -311,7 +311,7 @@ void OnosGetIGDPortMappingByIndex(struct mg_connection *c, int ev, void *ev_data
         options.host = host.ptr;
         options.host_len = host.len;
 
-        sendGetRequest(c, &options);
+        sendGetRequestWithPayload(c, &options, data->request);
     } else if (ev == MG_EV_HTTP_MSG) {
         retrieveResponseStatus(ev_data, data);
         retrieveJsonPayload(ev_data, data);        
@@ -342,7 +342,7 @@ void OnosGetIGDPortMapping(struct mg_connection *c, int ev, void *ev_data, void 
         options.host = host.ptr;
         options.host_len = host.len;
 
-        sendGetRequest(c, &options);
+        sendGetRequestWithPayload(c, &options, data->request);
     } else if (ev == MG_EV_HTTP_MSG) {
         retrieveResponseStatus(ev_data, data);
         retrieveJsonPayload(ev_data, data);        

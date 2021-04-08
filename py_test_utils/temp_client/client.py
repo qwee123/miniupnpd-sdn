@@ -13,18 +13,6 @@ print("Tests for service WANIPConn1: ")
 print(*(service.get_actions()), sep="\n")
 
 '''
-print("DeletePortMappingRange", service.DeletePortMappingRange(
-    NewStartPort=20,
-    NewEndPort=8888,
-    NewProtocol="tcp",
-    NewManage=False
-))
-print("DeletePortMapping", service.DeletePortMapping(
-    NewRemoteHost="*",
-    NewExternalPort=8888,
-    NewProtocol="tcp"
-))
-
 print("AddAnyPortMapping: ", service.AddAnyPortMapping(
     NewRemoteHost="*",
     NewExternalPort=6666,
@@ -46,7 +34,153 @@ print("GetGenericPortMappingEntry: ", service.GetGenericPortMappingEntry(
     NewPortMappingIndex=3
 ))
 '''
+'''
+print("AddAnyPortMapping: ", service.AddAnyPortMapping(
+    NewRemoteHost="*",
+    NewExternalPort=2000,
+    NewProtocol="udp",
+    NewInternalPort=220,
+    NewInternalClient="123.123.123.123",
+    NewEnabled=True,
+    NewPortMappingDescription="",
+    NewLeaseDuration=500000
+))
 
+print("AddAnyPortMapping: ", service.AddAnyPortMapping(
+    NewRemoteHost="*",
+    NewExternalPort=2000,
+    NewProtocol="udp",
+    NewInternalPort=220,
+    NewInternalClient="123.123.123.123",
+    NewEnabled=True,
+    NewPortMappingDescription="",
+    NewLeaseDuration=500000
+))
+
+print("AddAnyPortMapping: ", service.AddAnyPortMapping(
+    NewRemoteHost="*",
+    NewExternalPort=2000,
+    NewProtocol="tcp",
+    NewInternalPort=220,
+    NewInternalClient="123.123.123.123",
+    NewEnabled=True,
+    NewPortMappingDescription="",
+    NewLeaseDuration=500000
+))
+
+print("GetListOfPortMappings", service.GetListOfPortMappings(
+    NewStartPort=20,
+    NewEndPort=60000,
+    NewProtocol="tcp",
+    NewManage=False,
+    NewNumberOfPorts=20
+))
+
+print("GetListOfPortMappings", service.GetListOfPortMappings(
+    NewStartPort=20,
+    NewEndPort=60000,
+    NewProtocol="udp",
+    NewManage=False,
+    NewNumberOfPorts=20
+))
+
+print("AddPortMapping: ", service.AddPortMapping(
+    NewRemoteHost="*",
+    NewExternalPort=2000,
+    NewProtocol="udp",
+    NewInternalPort=220,
+    NewInternalClient="123.123.123.123",
+    NewEnabled=True,
+    NewPortMappingDescription="",
+    NewLeaseDuration=500000
+))
+
+print("GetListOfPortMappings", service.GetListOfPortMappings(
+    NewStartPort=20,
+    NewEndPort=60000,
+    NewProtocol="udp",
+    NewManage=False,
+    NewNumberOfPorts=20
+))
+
+print("GetSpecificPortMappingEntry: ", service.GetSpecificPortMappingEntry(
+    NewRemoteHost="0.0.0.0/0",
+    NewExternalPort=2000,
+    NewProtocol="tcp"
+))
+
+
+print("AddPortMapping: ", service.AddPortMapping(
+    NewRemoteHost="150.150.150.150/24",
+    NewExternalPort=2001,
+    NewProtocol="udp",
+    NewInternalPort=220,
+    NewInternalClient="123.123.123.123",
+    NewEnabled=True,
+    NewPortMappingDescription="",
+    NewLeaseDuration=500000
+))
+
+print("AddPortMapping: ", service.AddPortMapping(
+    NewRemoteHost="150.150.150.150/24",
+    NewExternalPort=2002,
+    NewProtocol="udp",
+    NewInternalPort=220,
+    NewInternalClient="123.123.123.123",
+    NewEnabled=True,
+    NewPortMappingDescription="",
+    NewLeaseDuration=500000
+))
+
+print("AddPortMapping: ", service.AddPortMapping(
+    NewRemoteHost="150.150.150.150/24",
+    NewExternalPort=2004,
+    NewProtocol="udp",
+    NewInternalPort=220,
+    NewInternalClient="123.123.123.123",
+    NewEnabled=True,
+    NewPortMappingDescription="",
+    NewLeaseDuration=500000
+))
+
+print("AddPortMapping: ", service.AddPortMapping(
+    NewRemoteHost="0.0.0.0/0",
+    NewExternalPort=2002,
+    NewProtocol="udp",
+    NewInternalPort=220,
+    NewInternalClient="123.123.123.123",
+    NewEnabled=True,
+    NewPortMappingDescription="",
+    NewLeaseDuration=500000
+))
+
+'''
+print("GetGenericPortMappingEntry: ", service.GetGenericPortMappingEntry(
+    NewPortMappingIndex=0
+))
+print("GetGenericPortMappingEntry: ", service.GetGenericPortMappingEntry(
+    NewPortMappingIndex=1
+))
+print("GetGenericPortMappingEntry: ", service.GetGenericPortMappingEntry(
+    NewPortMappingIndex=2
+))
+print("GetGenericPortMappingEntry: ", service.GetGenericPortMappingEntry(
+    NewPortMappingIndex=3
+))
+print("GetGenericPortMappingEntry: ", service.GetGenericPortMappingEntry(
+    NewPortMappingIndex=4
+))
+print("GetGenericPortMappingEntry: ", service.GetGenericPortMappingEntry(
+    NewPortMappingIndex=5
+))
+print("GetGenericPortMappingEntry: ", service.GetGenericPortMappingEntry(
+    NewPortMappingIndex=6
+))
+print("GetGenericPortMappingEntry: ", service.GetGenericPortMappingEntry(
+    NewPortMappingIndex=7
+))
+
+'''
 print("AddPortMapping: ", service.AddPortMapping(
     NewRemoteHost="*",
     NewExternalPort=6666,
@@ -170,7 +304,7 @@ print("GetListOfPortMappings", service.GetListOfPortMappings(
     NewManage=False,
     NewNumberOfPorts=20
 ))
-
+'''
 '''
 print("GetExternalIPAddress: ", service.GetExternalIPAddress())
 print("GetConnectionTypeInfo: ", service.GetConnectionTypeInfo())

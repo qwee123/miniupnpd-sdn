@@ -1195,8 +1195,6 @@ GetGenericPortMappingEntry(struct upnphttp * h, const char * action, const char 
 	                                        rhost, sizeof(rhost),
 	                                        &leaseduration);
 
-	printf("%s:%s\n", protocol, desc);
-
 	if(r < 0)
 	{
 		SoapError(h, 713, "SpecifiedArrayIndexInvalid");
