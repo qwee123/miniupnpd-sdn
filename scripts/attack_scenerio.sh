@@ -69,7 +69,6 @@ do
 	iface=$(ip addr show | sed -n 's/\([0-9]*\): \([a-z0-9]*_l\)@if'${iface_num}'.*/\2/p')
 	echo "Interface s3-"${vnfname}": "${iface}
 	monitor_interfaces="${monitor_interfaces} --interface ${iface}"
-	proxies_ip="${proxies_ip} -p ${vnfip}"
 	docker exec -d ${vnfname} miniupnpd -f miniupnpd.conf
 done
 
@@ -107,4 +106,3 @@ if [ "$1" == onos ]; then
 fi
 
 echo "Arguments to monitor interfaces in monitor.py: "${monitor_interfaces}
-echo "Arguments of proxies during the attack in attack.py: "${proxies_ip}
