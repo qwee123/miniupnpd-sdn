@@ -21,15 +21,6 @@
  * desc: description, just some memo.
  */
 
-struct igd_iface_status {
-    const char * status;
-    unsigned long opackets;
-	unsigned long ipackets;
-	unsigned long obytes;
-	unsigned long ibytes;
-	unsigned long baudrate;
-};
-
 struct portmapping_entry {
     const char * rhost;
     unsigned short eport;
@@ -79,9 +70,6 @@ get_peer_rule_by_index(int index, unsigned short * eport,
 
 int
 get_sdn_igd_external_ip_addr(char *ret_addr, size_t max_len);
-
-int
-get_sdn_igd_iface_status(struct igd_iface_status * data);
 
 int
 get_sdn_igd_wan_conn_status(void);

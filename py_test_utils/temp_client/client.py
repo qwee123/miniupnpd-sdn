@@ -8,8 +8,6 @@ device = upnp.get_igd()
 service = device['WANIPConn1']
 service2 = device['WANCommonIFC1']
 
-
-
 print("AddPortMapping: ", service.AddPortMapping(
     NewRemoteHost="*",
     NewExternalPort=6667,

@@ -21,6 +21,7 @@
 
 #include "macros.h"
 #include "config.h"
+#include "commonrdr.h"
 #include "upnpredirect.h"
 #include "upnpglobalvars.h"
 #include "upnpevents.h"

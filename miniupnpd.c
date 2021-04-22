@@ -2581,7 +2581,7 @@ main(int argc, char * * argv)
 			}
 		}
 
-#ifndef USE_SDN /* $qwe$ */
+#ifndef USE_SDN
 		/* remove unused rules */ 
 		if( v.clean_ruleset_interval
 		  && (timeofday.tv_sec >= checktime.tv_sec + v.clean_ruleset_interval))

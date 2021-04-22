@@ -18,6 +18,7 @@
 #include <xtables.h>
 #include <linux/version.h>
 
+#include "../getifstats.h"
 #include "../config.h"
 #include "onosclient.h"
 #include "mongoose/mongoose.h"
@@ -90,7 +91,7 @@ retrievePortmappingArrayFromJsonObj(struct json_object *jobj,
 			 const char *key, struct portmapping_entry ** ret, unsigned int * cap);
 
 static int
-strcmpcaseignore(const char * proto_new, const char * proto);
+strcmpcaseignore(char * proto_new, char * proto);
 
 /*
  * To printout a json object:
@@ -471,7 +472,8 @@ get_redirect_rule(unsigned short eport, const char * proto,
 		return -1;
 	}
 
-	const char * rhost_new, * proto_new, * iaddr_new;
+	const char * rhost_new, * iaddr_new;
+	char * proto_new;
 	unsigned short eport_new;
 	if (!retrieveStringFromJsonObj(data.response, json_tag_rhost, &rhost_new)
 		|| strcmp(rhost_new, rhost) != 0)
@@ -643,9 +645,8 @@ get_portmappings_in_range(unsigned short startport, unsigned short endport,
 {
 	struct portmapping_entry * array;
 	unsigned int capacity = DEFAULT_PORTMAPPING_CAP;
+	
 	struct json_object *jobj = json_object_new_object();
-
-	//use json_int seems to be safe to convert an unsigned short after testing.
 	if (json_object_object_add(jobj, "proto", json_object_new_string(proto)) < 0
 		|| json_object_object_add(jobj, "start_port_num", json_object_new_int(startport)) < 0
 	    || json_object_object_add(jobj, "end_port_num", json_object_new_int(endport)) < 0
@@ -659,7 +660,6 @@ get_portmappings_in_range(unsigned short startport, unsigned short endport,
 		.request = jobj,
 		.done = false 
 	};
-
 	mg_http_connect(&mgr, controller_address, OnosGetIGDPortMappingRange, &data);
 	
 	while(!data.done) mg_mgr_poll(&mgr, 1000);
@@ -904,7 +904,7 @@ retrievePortmappingArrayFromJsonObj(struct json_object *jobj, const char *key,
 }
 
 static int
-strcmpcaseignore(const char * proto_new, const char * proto) {
+strcmpcaseignore(char * proto_new, char * proto) {
 	for(char *ptr = proto_new;*ptr;ptr++) *ptr = tolower(*ptr);
 
 	for(char *ptr = proto;*ptr;ptr++) *ptr = tolower(*ptr);

@@ -7,6 +7,9 @@ controller_container_name=
 client_gateway=172.16.0.1
 miniupnpd_addr=172.16.0.100
 miniupnpd_version=v6
+vnf_num=2
+monitor_interfaces=
+proxies_ip=
 
 if [ -z "$1" ]; then
 	echo "Please Specify an experiment situation, it's either 'pytest' or 'onos'"
@@ -54,11 +57,21 @@ if [ "$(docker ps -aq -f name='^miniupnpd-sdn$')" ]; then
 	docker stop miniupnpd-sdn && docker rm miniupnpd-sdn
 fi
 
-docker run -itd --name miniupnpd-sdn --cap-add NET_ADMIN --cap-add NET_BROADCAST --network ${onos_nfv_network} miniupnpd-sdn:${miniupnpd_version}
-ovs-docker add-port ovs-s3 eth1 miniupnpd-sdn --ipaddress=${miniupnpd_addr}/24
-iface_num=$(docker exec miniupnpd-sdn ip addr show | sed -n 's/\([0-9]*\): \(eth1@\).*/\1/p')
-iface=$(ip addr show | sed -n 's/\([0-9]*\): \([a-z0-9]*_l\)@if'${iface_num}'.*/\2/p')
-echo "Interface s3-miniupnpd: "${iface}
+vnfname=
+vnfip=
+for i in $(seq 1 ${vnf_num})
+do
+	vnfname=miniupnpd-sdn${i}
+	vnfip=172.16.0.$((i+100))
+	docker run -itd --name ${vnfname} --cap-add NET_ADMIN --cap-add NET_BROADCAST --network ${onos_nfv_network} miniupnpd-sdn:${miniupnpd_version}
+	ovs-docker add-port ovs-s3 eth1 ${vnfname} --ipaddress=${vnfip}/24
+	iface_num=$(docker exec ${vnfname} ip addr show | sed -n 's/\([0-9]*\): \(eth1@\).*/\1/p')
+	iface=$(ip addr show | sed -n 's/\([0-9]*\): \([a-z0-9]*_l\)@if'${iface_num}'.*/\2/p')
+	echo "Interface s3-"${vnfname}": "${iface}
+	monitor_interfaces="${monitor_interfaces} --interface ${iface}"
+	proxies_ip="${proxies_ip} -p ${vnfip}"
+	docker exec -d ${vnfname} miniupnpd -f miniupnpd.conf
+done
 
 clientname=
 for i in $(seq 1 2)
@@ -70,6 +83,7 @@ do
 	iface_num=$(docker exec ${clientname} ip addr show | sed -n 's/\([0-9]*\): \(eth0@\).*/\1/p')
     iface=$(ip addr show | sed -n 's/\([0-9]*\): \([a-z0-9]*_l\)@if'${iface_num}'.*/\2/p')
     echo "Interface s1-"${clientname}": "${iface}
+	monitor_interfaces="${monitor_interfaces} --interface ${iface}"
 done
 
 for i in $(seq 1 1)
@@ -81,6 +95,7 @@ do
 	iface_num=$(docker exec ${clientname} ip addr show | sed -n 's/\([0-9]*\): \(eth0@\).*/\1/p')
 	iface=$(ip addr show | sed -n 's/\([0-9]*\): \([a-z0-9]*_l\)@if'${iface_num}'.*/\2/p')
 	echo "Interface s2-attacker: "${iface}
+	monitor_interfaces="${monitor_interfaces} --interface ${iface}"
 done
 
 if [ "$1" == onos ]; then
@@ -90,3 +105,6 @@ if [ "$1" == onos ]; then
 	ovs-vsctl set-controller ovs-s3 tcp:${controller_address}:${controller_port}
     ovs-vsctl set-controller ovs-r1 tcp:${controller_address}:${controller_port}
 fi
+
+echo "Arguments to monitor interfaces in monitor.py: "${monitor_interfaces}
+echo "Arguments of proxies during the attack in attack.py: "${proxies_ip}
