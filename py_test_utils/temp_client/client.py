@@ -12,7 +12,7 @@ print("AddPortMapping: ", service.AddPortMapping(
     NewRemoteHost="*",
     NewExternalPort=6667,
     NewProtocol="tcp",
-    NewInternalPort=221,
+    NewInternalPort=60000,
     NewInternalClient="172.16.0.2",
     NewEnabled=True,
     NewPortMappingDescription="",

