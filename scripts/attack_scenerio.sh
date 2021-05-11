@@ -7,9 +7,10 @@ controller_container_name=
 client_gateway=172.16.0.1
 miniupnpd_addr=172.16.0.100
 miniupnpd_version=v6
-vnf_num=20
+vnf_num=1
+attacker_num=1
+client_num=2
 monitor_interfaces=
-proxies_ip=
 
 if [ -z "$1" ]; then
 	echo "Please Specify an experiment situation, it's either 'pytest' or 'onos'"
@@ -73,27 +74,27 @@ do
 done
 
 clientname=
-for i in $(seq 1 2)
+for i in $(seq 1 ${client_num})
 do
 	clientname=client${i}
 	docker run -itd --name ${clientname} --net none --cap-add NET_ADMIN py_test_client
 	ovs-docker add-port ovs-s1 eth0 ${clientname} --ipaddress=172.16.0.$((i+1))/24
 	docker exec ${clientname} ip route add default via ${client_gateway}
 	iface_num=$(docker exec ${clientname} ip addr show | sed -n 's/\([0-9]*\): \(eth0@\).*/\1/p')
-    iface=$(ip addr show | sed -n 's/\([0-9]*\): \([a-z0-9]*_l\)@if'${iface_num}'.*/\2/p')
-    echo "Interface s1-"${clientname}": "${iface}
+	iface=$(ip addr show | sed -n 's/\([0-9]*\): \([a-z0-9]*_l\)@if'${iface_num}'.*/\2/p')
+	echo "Interface s1-"${clientname}": "${iface}
 	monitor_interfaces="${monitor_interfaces} --interface ${iface}"
 done
 
-for i in $(seq 1 1)
+for i in $(seq 1 ${attacker_num})
 do
 	clientname=attacker${i}
-        docker run -itd --name ${clientname} --net none --cap-add NET_ADMIN py_test_attacker
+	docker run -itd --name ${clientname} --net none --cap-add NET_ADMIN py_test_attacker
 	ovs-docker add-port ovs-s2 eth0 ${clientname} --ipaddress=172.16.0.$((i+10))/24
 	docker exec ${clientname} ip route add default via ${client_gateway}
 	iface_num=$(docker exec ${clientname} ip addr show | sed -n 's/\([0-9]*\): \(eth0@\).*/\1/p')
 	iface=$(ip addr show | sed -n 's/\([0-9]*\): \([a-z0-9]*_l\)@if'${iface_num}'.*/\2/p')
-	echo "Interface s2-attacker: "${iface}
+	echo "Interface s2-"${clientname}": "${iface}
 	monitor_interfaces="${monitor_interfaces} --interface ${iface}"
 done
 
@@ -102,7 +103,7 @@ if [ "$1" == onos ]; then
 	ovs-vsctl set-controller ovs-s1 tcp:${controller_address}:${controller_port}
 	ovs-vsctl set-controller ovs-s2 tcp:${controller_address}:${controller_port}
 	ovs-vsctl set-controller ovs-s3 tcp:${controller_address}:${controller_port}
-    ovs-vsctl set-controller ovs-r1 tcp:${controller_address}:${controller_port}
+	ovs-vsctl set-controller ovs-r1 tcp:${controller_address}:${controller_port}
 fi
 
 echo "Arguments to monitor interfaces in monitor.py: "${monitor_interfaces}

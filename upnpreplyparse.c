@@ -12,6 +12,7 @@
 
 #include "upnpreplyparse.h"
 #include "minixml.h"
+#include "config.h"
 
 static void
 NameValueParserStartElt(void * d, const char * name, int l)

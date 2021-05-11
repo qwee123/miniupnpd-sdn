@@ -15,7 +15,7 @@ parser = argparse.ArgumentParser(description="Get simple receive/transmission" \
 parser.add_argument('--interface', '-i', action='append',
                      help="Network interface for which to compute statistics." \
                            " Can be specified multiple times.")
-parser.add_argument('--sampling', '-s', default=60, type=int,
+parser.add_argument('--duration', '-d', default=60, type=int,
                     help="period to monitor and record the traffic" \
                             "default is 60.")
 parser.add_argument('--output', '-o', default="results",
@@ -36,7 +36,7 @@ else:
                      " Program aborted." % i)
         STAT_DIRS.append(d)
 APP_DIR = namespace.output
-SAMPLING = namespace.sampling    
+SAMPLING = namespace.duration    
 SAMPLING_INTERVAL = 0.5
 PLOT_TIMESTAMP = [t*SAMPLING_INTERVAL+SAMPLING_INTERVAL for t in range(2, int(SAMPLING*(1/SAMPLING_INTERVAL)), 1)]
 def main():

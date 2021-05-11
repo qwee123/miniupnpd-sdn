@@ -474,7 +474,7 @@ ProcessIncomingHTTP(int shttpl, const char * protocol)
 #ifdef DEBUG
 		syslog(LOG_DEBUG, "%s connection from %s", protocol, addr_str);
 #endif /* DEBUG */
-		if(get_lan_for_peer((struct sockaddr *)&clientname) == NULL && 0) /* $qwe$ */
+		if(get_lan_for_peer((struct sockaddr *)&clientname) == NULL && 0)
 		{
 			/* The peer is not a LAN ! */
 			syslog(LOG_WARNING,
