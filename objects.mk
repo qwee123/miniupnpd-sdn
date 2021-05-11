@@ -7,3 +7,4 @@ BASEOBJS = miniupnpd.o upnphttp.o upnpdescgen.o upnpsoap.o \
 
 # sources in linux/ directory
 LNXOBJS = getifstats.o ifacewatcher.o getroute.o
+LNXSDNOBJS = ifacewatcher.o getroute.o

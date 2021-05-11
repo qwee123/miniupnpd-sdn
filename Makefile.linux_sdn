@@ -60,7 +60,7 @@ include $(SRCDIR)/objects.mk
 JSONLIB = $(JSONBUILDPATH)/libjson-c.a
 SDNOBJS = iptcrdr.o iptpinhole.o nfct_get.o onosclient.o mongoose.o
 
-ALLOBJS = $(BASEOBJS) $(LNXOBJS) $(SDNOBJS)
+ALLOBJS = $(BASEOBJS) $(LNXSDNOBJS) $(SDNOBJS)
 
 DEP = $(ALLOBJS:.o=.d)
 

@@ -34,6 +34,7 @@
 #include "getconnstatus.h"
 #include "upnpurns.h"
 #include "upnputils.h"
+
 #ifdef USE_SDN
 #include "sdn/iptcrdr.h"
 #endif
@@ -751,7 +752,6 @@ AddAnyPortMapping(struct upnphttp * h, const char * action, const char * ns)
 	r = upnp_redirect(r_host, eport, int_ip, iport, protocol, desc, leaseduration, true, &ret_eport);
 #else
 	r = upnp_redirect(r_host, eport, int_ip, iport, protocol, desc, leaseduration);
-
 	/* first try the port asked in request, then
 	 * try +1, -1, +2, -2, etc. */
 	if (r != 0 && r != -1) {
@@ -1086,7 +1086,7 @@ DeletePortMappingRange(struct upnphttp * h, const char * action, const char * ns
 	syslog(LOG_INFO, "%s: deleting external ports: %hu-%hu, protocol: %s",
 	       action, startport, endport, protocol);
 	
-#ifdef USE_SDN;
+#ifdef USE_SDN
 	r = upnp_delete_portmappings_in_range(startport, endport, protocol,
 						&entry_list, &list_size);
 

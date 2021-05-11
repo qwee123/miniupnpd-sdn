@@ -213,7 +213,7 @@ Delete_upnphttp(struct upnphttp * h)
  * This function is called after the \r\n\r\n character
  * sequence has been found in h->req_buf */
 static void
-ParseHttpHeaders(struct upnphttp * h)
+ParseHttpHeaders(struct upnphttp * h) /*qwe*/
 {
 	char * line;
 	char * colon;
@@ -480,7 +480,6 @@ sendXMLdesc(struct upnphttp * h, char * (f)(int *))
 	free(desc);
 }
 
-/*$qwe$*/
 /* ProcessHTTPPOST_upnphttp()
  * executes the SOAP query if it is possible */
 static void

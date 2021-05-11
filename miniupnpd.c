@@ -474,7 +474,7 @@ ProcessIncomingHTTP(int shttpl, const char * protocol)
 #ifdef DEBUG
 		syslog(LOG_DEBUG, "%s connection from %s", protocol, addr_str);
 #endif /* DEBUG */
-		if(get_lan_for_peer((struct sockaddr *)&clientname) == NULL && 0) /* $qwe$ */
+		if(get_lan_for_peer((struct sockaddr *)&clientname) == NULL && 0)
 		{
 			/* The peer is not a LAN ! */
 			syslog(LOG_WARNING,
@@ -2581,7 +2581,7 @@ main(int argc, char * * argv)
 			}
 		}
 
-#ifndef USE_SDN /* $qwe$ */
+#ifndef USE_SDN
 		/* remove unused rules */ 
 		if( v.clean_ruleset_interval
 		  && (timeofday.tv_sec >= checktime.tv_sec + v.clean_ruleset_interval))

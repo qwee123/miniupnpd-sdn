@@ -1,0 +1,9 @@
+FROM python:3.6-buster
+
+RUN apt update && apt install -y net-tools iputils-ping vim tcpdump
+RUN python3 -m pip install flask upnpy
+RUN python3 -m pip install scapy argparse
+
+COPY ./temp_attacker/* /
+
+CMD /bin/bash
