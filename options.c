@@ -163,6 +163,7 @@ readoptionsfile(const char * fname)
 
 		len = strlen(name); /* length of the whole line excluding leading
 		                     * and ending white spaces */
+#ifndef USE_CUSTOM_PERM_MECHANISM
 		/* check for UPnP permissions rule */
 		if((len > 6) && (0 == memcmp(name, "allow", 5) || 0 == memcmp(name, "deny", 4)))
 		{
@@ -188,6 +189,7 @@ readoptionsfile(const char * fname)
 			}
 			continue;
 		}
+#endif
 #ifdef PCP_SADSCP
 		/* check for DSCP values configuration */
 		if((len > 15) && 0 == memcmp(name, "set_learn_dscp", sizeof("set_learn_dscp")-1) )

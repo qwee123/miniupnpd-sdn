@@ -28,6 +28,7 @@ case "$argv" in
 	--vendorcfg) VENDORCFG=1 ;;
 	--pcp-peer) PCP_PEER=1 ;;
 	--portinuse) PORTINUSE=1 ;;
+	--with-jwtauth)	AUTH=1 ;; 
 	--uda-version=*)
 		UPNP_VERSION=$(echo $argv | cut -d= -f2)
 		UPNP_VERSION_MAJOR=$(echo $UPNP_VERSION | cut -s -d. -f1)
@@ -53,6 +54,7 @@ case "$argv" in
 		echo " --vendorcfg enable configuration of manufacturer info"
 		echo " --pcp-peer  enable PCP PEER operation"
 		echo " --portinuse enable port in use check"
+		echo " --permission use original permision mechanism or the JWT-like mechanism"
 		echo " --uda-version=x.x  set advertised UPnP version (default to ${UPNP_VERSION_MAJOR}.${UPNP_VERSION_MINOR})"
 		echo " --disable-pppconn  disable WANPPPConnection"
 		echo " --firewall=<name>  force the firewall type (nftables, iptables, pf, ipf, ipfw)"
@@ -619,6 +621,12 @@ echo "Please edit config.h for more compilation options."
 # a RemoteHost
 if [ \( "$FW" = "netfilter" \) -o \( "$FW" = "pf" \) -o \( "$FW" = "ipfw" \) ] ; then
 	echo "#define SUPPORT_REMOTEHOST" >> ${CONFIGFILE}
+fi
+
+# define USE_JWT_AUTH if custom JWT-like authorization mechanism is choosed
+if [ -n "$AUTH" ] ; then
+	echo "#define USE_JWT_AUTH" >> ${CONFIGFILE}
+	echo "EXTRAOBJs += auth" >> config.mk
 fi
 
 echo "/* Enable IGD2 \"Port Triggering\" as defined in Section 2.5.16" >> ${CONFIGFILE}

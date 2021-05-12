@@ -39,6 +39,10 @@
 #include "sdn/iptcrdr.h"
 #endif
 
+#ifdef USE_JWT_AUTH
+#include "jwtauth/auth.h"
+#endif
+
 /* utility function */
 static int is_numeric(const char * s)
 {
@@ -533,6 +537,7 @@ AddPortMapping(struct upnphttp * h, const char * action, const char * ns)
 		}
 	}
 
+#ifndef USE_JWT_AUTH
 	/* check if NewInternalAddress is the client address */
 	if(GETFLAG(SECUREMODEMASK))
 	{
@@ -545,6 +550,7 @@ AddPortMapping(struct upnphttp * h, const char * action, const char * ns)
 			return;
 		}
 	}
+#endif
 
 	if (!int_port || !ext_port || !protocol)
 	{
@@ -562,6 +568,15 @@ AddPortMapping(struct upnphttp * h, const char * action, const char * ns)
 		SoapError(h, 716, "Wildcard not permited in ExtPort");
 		return;
 	}
+
+#ifdef USE_JWT_AUTH
+	if (-1 == VerifyAuth())
+	{
+		ClearNameValueList(&data);
+		SoapError(h, 606, "Action not authorized");
+		return;
+	}
+#endif
 
 	leaseduration = leaseduration_str ? atoi(leaseduration_str) : 0;
 #ifdef IGD_V2
@@ -673,6 +688,7 @@ AddAnyPortMapping(struct upnphttp * h, const char * action, const char * ns)
 	desc = GetValueFromNameValueList(&data, "NewPortMappingDescription");
 	leaseduration_str = GetValueFromNameValueList(&data, "NewLeaseDuration");
 
+	//atoi() will return 0 if the passed input is not a valid numeric string.
 	leaseduration = leaseduration_str ? atoi(leaseduration_str) : 0;
 	if(leaseduration == 0)
 		leaseduration = 604800;
@@ -684,15 +700,18 @@ AddAnyPortMapping(struct upnphttp * h, const char * action, const char * ns)
 		return;
 	}
 
-	eport = (0 == strcmp(ext_port, "*")) ? 0 : (unsigned short)atoi(ext_port);
-	if (eport == 0) {
-		eport = 1024 + ((random() & 0x7ffffffL) % (65536-1024));
-	}
 	iport = (unsigned short)atoi(int_port);
 	if(iport == 0 || (!is_numeric(ext_port) && 0 != strcmp(ext_port, "*"))) {
 		ClearNameValueList(&data);
 		SoapError(h, 402, "Invalid Args");
 		return;
+	}
+
+	// eport = (0 == strcmp(ext_port, "*")) ? 0 : (unsigned short)atoi(ext_port);
+	eport = (unsigned short)atoi(ext_port); //ext_port is guaranteed to be either numeric or '*' here.
+	if (eport == 0) {
+		eport = 1024 + ((random() & 0x7ffffffL) % (65536-1024));
+		//is there a missing 'f' inside "0x7ffffffL"? Anyway, seems not affecting the functionality here. By Ben.
 	}
 
 #ifdef USE_SDN
@@ -1375,7 +1394,14 @@ http://www.upnp.org/schemas/gw/WANIPConnection-v2.xsd">
 				return;
 			}
 		}
-#ifndef USE_SDN		
+
+#ifdef USE_SDN
+		bodylen += snprintf(body+bodylen, bodyalloc-bodylen, entry,
+							entry_list[i].rhost, entry_list[i].eport, 
+							entry_list[i].proto, entry_list[i].iport,
+							entry_list[i].iaddr, "", entry_list[i].leaseduration);
+		number--;
+#else		
 		rhost[0] = '\0';
 		r = upnp_get_redirection_infos(entry_list[i], protocol, &iport,
 		                               int_ip, sizeof(int_ip),
@@ -1383,15 +1409,13 @@ http://www.upnp.org/schemas/gw/WANIPConnection-v2.xsd">
 		                               rhost, sizeof(rhost),
 		                               &leaseduration);
 		if(r == 0)
-#endif
 		{
-			
 			bodylen += snprintf(body+bodylen, bodyalloc-bodylen, entry,
-			                    entry_list[i].rhost, entry_list[i].eport, 
-								entry_list[i].proto, entry_list[i].iport,
-								entry_list[i].iaddr, "", entry_list[i].leaseduration);
+			                    rhost, entry_list[i], protocol,
+			                    iport, int_ip, desc, leaseduration);
 			number--;
 		}
+#endif
 	}
 
 	free(entry_list);

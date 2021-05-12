@@ -438,9 +438,9 @@ upnp_redirect(const char * rhost, unsigned short eport,
 			timestamp = (leaseduration > 0) ? upnp_time() + leaseduration : 0;
 
 			if(iport != iport_old) {
-				r = update_portmapping(eport, proto, iport, desc, timestamp);
+				r = update_portmapping(ext_if_name, eport, proto, iport, desc, timestamp);
 			} else {
-				r = update_portmapping_desc_timestamp(eport, proto, desc, timestamp);
+				r = update_portmapping_desc_timestamp(ext_if_name, eport, proto, desc, timestamp);
 			}
 
 			if(iport != iport_old) {
@@ -805,7 +805,12 @@ get_upnp_rules_state_list(int max_rules_number_target)
 		{
 			syslog(LOG_NOTICE, "remove port mapping %hu %s because it has expired",
 			       tmp->eport, proto_itoa(tmp->proto));
+#ifdef USE_SDN
 			_upnp_delete_redir(tmp->eport, "", tmp->proto);
+#else
+			_upnp_delete_redir(tmp->eport, tmp->proto);
+#endif
+				
 			*p = tmp->next;
 			free(tmp);
 			i--;
@@ -829,7 +834,9 @@ void
 remove_unused_rules(struct rule_state * list)
 {
 //	unused variable
-//	char ifname[IFNAMSIZ];
+#ifndef USE_SDN
+	char ifname[IFNAMSIZ];
+#endif
 	unsigned short iport;
 	struct rule_state * tmp;
 	u_int64_t packets;
@@ -854,7 +861,11 @@ remove_unused_rules(struct rule_state * list)
 				       "%" PRIu64 "packets %" PRIu64 "bytes",
 				       list->eport, proto_itoa(list->proto),
 				       packets, bytes);
-				_upnp_delete_redir(list->eport, "", list->proto); //Use empty string to replace rhost temporary
+#ifdef USE_SDN
+				_upnp_delete_redir(tmp->eport, "", list->proto); //Use empty string to replace rhost temporary
+#else
+				_upnp_delete_redir(tmp->eport, list->proto);
+#endif
 				n++;
 			}
 		}
@@ -890,6 +901,7 @@ upnp_get_portmappings_in_range(unsigned short startport,
 #endif
 }
 
+#ifdef USE_SDN
 int
 upnp_delete_portmappings_in_range(unsigned short startport,
                                unsigned short endport,
@@ -902,6 +914,7 @@ upnp_delete_portmappings_in_range(unsigned short startport,
 	return delete_portmappings_in_range(startport, endport, protocol,
 					entry_list, list_number);
 }
+#endif
 
 /* stuff for miniupnpdctl */
 #ifdef USE_MINIUPNPDCTL

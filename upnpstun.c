@@ -6,7 +6,12 @@
  * (c) 2018 Pali Rohár
  * This software is subject to the conditions detailed
  * in the LICENCE file provided within the distribution */
-#ifdef USE_SDN
+
+#ifndef TEST_LINUX_DEBUG_APP
+#include "config.h"
+#endif
+
+#ifndef USE_SDN
 #include <sys/select.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -19,10 +24,6 @@
 #include <syslog.h>
 #include <string.h>
 #include <errno.h>
-
-#ifndef TEST_LINUX_DEBUG_APP
-#include "config.h"
-#endif
 
 #include "upnputils.h"
 #include "upnpstun.h"

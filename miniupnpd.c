@@ -1754,6 +1754,7 @@ init(int argc, char * * argv, struct runtime_vars * v)
 				fprintf(stderr, "Option -%c takes two arguments.\n", argv[i][1]);
 #endif 	/* #ifndef MULTIPLE_EXTERNAL_IP */
 			break;
+#ifndef USE_CUSTOM_PERM_MECHANISM
 		case 'A':
 			if(i+1 < argc) {
 				void * tmp;
@@ -1771,6 +1772,7 @@ init(int argc, char * * argv, struct runtime_vars * v)
 			} else
 				fprintf(stderr, "Option -%c takes one argument.\n", argv[i][1]);
 			break;
+#endif
 		case 'f':
 			i++;	/* discarding, the config file is already read */
 			break;

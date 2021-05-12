@@ -94,7 +94,7 @@ delete_portmappings_in_range(unsigned short startport,
 #else
 unsigned short *
 get_portmappings_in_range(unsigned short startport, unsigned short endport,
-                          const char * proto, unsigned int * number);
+                          int proto, unsigned int * number);
 #endif
 
 /* update the port mapping internal port, description and timestamp */

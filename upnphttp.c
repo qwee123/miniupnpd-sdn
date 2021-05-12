@@ -213,7 +213,7 @@ Delete_upnphttp(struct upnphttp * h)
  * This function is called after the \r\n\r\n character
  * sequence has been found in h->req_buf */
 static void
-ParseHttpHeaders(struct upnphttp * h) /*qwe*/
+ParseHttpHeaders(struct upnphttp * h)
 {
 	char * line;
 	char * colon;
@@ -369,6 +369,45 @@ intervening space) by either an integer or the keyword "infinite". */
 			}
 #endif /* UPNP_STRICT */
 #endif /* ENABLE_EVENTS */
+#ifdef USE_CUSTOM_PERM_MECHANISM
+			else if(strncasecmp(line, "Authorization:", 14) == 0)
+			{
+				p = colon + 1;
+				while((*p == ' ') || (*p == '\t'))
+					p++;
+
+				char *scheme = p;
+				while(!isspace(*p))
+					p++;
+				n = p - scheme;
+				if(strncasecmp(scheme, "Bearer", n) != 0) {
+					syslog(LOG_ERR, "Unexpected authorization scheme %.*s detected!", n, scheme);
+					h->req_AuthOff = 0;
+					h->req_AuthLen = 0;
+				} else {
+					while((*p == ' ') || (*p == '\t'))
+						p++;
+
+					n = 0;
+					while(!isspace(p[n]))
+						n++;
+					h->req_AuthOff = p - h->req_buf;
+					h->req_AuthLen = n;
+				}
+			}
+			else if(strncasecmp(line, "Signature:", 10) == 0)
+			{
+				p = colon + 1;
+				while((*p == ' ') || (*p == '\t'))
+					p++;
+
+				n = 0;
+				while(!isspace(p[n]))
+					n++;
+				h->req_SigOff = p - h->req_buf;
+				h->req_SigLen = n;
+			}
+#endif
 		}
 		/* the loop below won't run off the end of the buffer
 		 * because the buffer is guaranteed to contain the \r\n\r\n
