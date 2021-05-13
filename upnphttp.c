@@ -369,7 +369,7 @@ intervening space) by either an integer or the keyword "infinite". */
 			}
 #endif /* UPNP_STRICT */
 #endif /* ENABLE_EVENTS */
-#ifdef USE_CUSTOM_PERM_MECHANISM
+#ifdef USE_JWT_AUTH
 			else if(strncasecmp(line, "Authorization:", 14) == 0)
 			{
 				p = colon + 1;

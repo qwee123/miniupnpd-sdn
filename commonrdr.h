@@ -55,7 +55,7 @@ get_redirect_rule(unsigned short eport, const char * proto,
 int
 get_redirect_rule_by_index(int index, unsigned short * eport,
                            char * iaddr, int iaddrlen, unsigned short * iport,
-                           const char * proto, char * desc, int desclen,
+                           char * proto, char * desc, int desclen,
                            char * rhost, int rhostlen,
                            unsigned int * timestamp,
                            u_int64_t * packets, u_int64_t * bytes);

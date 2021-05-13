@@ -13,7 +13,11 @@
 
 #include "config.h"
 #ifdef ENABLE_EVENTS
+#ifdef USE_SDN
+#include "sdn/iptcrdr.h"
+#else
 #include "getifaddr.h"
+#endif
 #include "upnpredirect.h"
 #endif
 #include "upnpdescgen.h"
@@ -1297,11 +1301,11 @@ genEventVars(int * len, const struct serviceDesc * s)
 					str = strcat_str(str, len, &tmplen, use_ext_ip_addr);
 				else {
 #endif
-					struct in_addr addr;
 					char ext_ip_addr[INET_ADDRSTRLEN];
 #ifdef USE_SDN
 					if(get_sdn_igd_external_ip_addr(ext_ip_addr, INET_ADDRSTRLEN) < 0) {
 #else
+					struct in_addr addr;
 					if(getifaddr(ext_if_name, ext_ip_addr, INET_ADDRSTRLEN, &addr, NULL) < 0 || addr_is_reserved(&addr)) {
 #endif
 						str = strcat_str(str, len, &tmplen, "0.0.0.0");

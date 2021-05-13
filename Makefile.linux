@@ -108,7 +108,7 @@ TESTUPNPDESCGENOBJS = testupnpdescgen.o upnpdescgen.o
 EXECUTABLES = miniupnpd testupnpdescgen testgetifstats \
               testupnppermissions miniupnpdctl testgetifaddr \
               testgetroute testasyncsendto testportinuse \
-              testssdppktgen testminissdp
+              testssdppktgen testminissdp testjwtauth
 
 .PHONY:	all clean install depend dox
 
@@ -125,6 +125,7 @@ clean:
 	$(RM) testportinuse.o
 	$(RM) testminissdp.o
 	$(RM) testssdppktgen.o
+	$(RM) testjwtauth.o
 	$(RM) miniupnpdctl.o
 	$(RM) validateupnppermissions validategetifaddr validatessdppktgen
 	$(RM) -r dox/
@@ -184,6 +185,7 @@ testportinuse:	testportinuse.o portinuse.o getifaddr.o \
 testminissdp:	testminissdp.o minissdp.o upnputils.o upnpglobalvars.o \
 	asyncsendto.o getroute.o
 
+testjwtauth:	testjwtauth.o jwtauth.o
 
 miniupnpdctl:	miniupnpdctl.o
 

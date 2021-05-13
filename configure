@@ -54,7 +54,7 @@ case "$argv" in
 		echo " --vendorcfg enable configuration of manufacturer info"
 		echo " --pcp-peer  enable PCP PEER operation"
 		echo " --portinuse enable port in use check"
-		echo " --permission use original permision mechanism or the JWT-like mechanism"
+		echo " --with-jwtauth enable JWT-like authentication mechanism"
 		echo " --uda-version=x.x  set advertised UPnP version (default to ${UPNP_VERSION_MAJOR}.${UPNP_VERSION_MINOR})"
 		echo " --disable-pppconn  disable WANPPPConnection"
 		echo " --firewall=<name>  force the firewall type (nftables, iptables, pf, ipf, ipfw)"
@@ -626,7 +626,6 @@ fi
 # define USE_JWT_AUTH if custom JWT-like authorization mechanism is choosed
 if [ -n "$AUTH" ] ; then
 	echo "#define USE_JWT_AUTH" >> ${CONFIGFILE}
-	echo "EXTRAOBJs += auth" >> config.mk
 fi
 
 echo "/* Enable IGD2 \"Port Triggering\" as defined in Section 2.5.16" >> ${CONFIGFILE}

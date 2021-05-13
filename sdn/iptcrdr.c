@@ -91,7 +91,7 @@ retrievePortmappingArrayFromJsonObj(struct json_object *jobj,
 			 const char *key, struct portmapping_entry ** ret, unsigned int * cap);
 
 static int
-strcmpcaseignore(char * proto_new, char * proto);
+cmpCaseInsensitive(const char * proto_new, const char * proto);
 
 /*
  * To printout a json object:
@@ -472,7 +472,7 @@ get_redirect_rule(unsigned short eport, const char * proto,
 		return -1;
 	}
 
-	const char * rhost_new, * iaddr_new;
+	char * rhost_new, * iaddr_new;
 	char * proto_new;
 	unsigned short eport_new;
 	if (!retrieveStringFromJsonObj(data.response, json_tag_rhost, &rhost_new)
@@ -492,7 +492,7 @@ get_redirect_rule(unsigned short eport, const char * proto,
 	}
 
 	if (!retrieveStringFromJsonObj(data.response, json_tag_proto, &proto_new)
-		|| strcmpcaseignore(proto_new, proto) != 0) 
+		|| cmpCaseInsensitive(proto_new, proto) != 0) 
 	{
 		syslog(LOG_WARNING, "Fail to retrieve protocol from response of onos."
 			" Or the received protocol is not equeal to the requested one.");
@@ -526,7 +526,7 @@ get_redirect_rule(unsigned short eport, const char * proto,
 int
 get_redirect_rule_by_index(int index, unsigned short * eport,
                            char * iaddr, int iaddrlen, unsigned short * iport,
-                           const char * proto, char * desc, int desclen,
+                           char * proto, char * desc, int desclen,
                            char * rhost, int rhostlen,
                            unsigned int * leaseduration,
                            u_int64_t * packets, u_int64_t * bytes)
@@ -557,7 +557,7 @@ get_redirect_rule_by_index(int index, unsigned short * eport,
 	}
 
 
-	const char * rhost_new, * proto_new, * iaddr_new;
+	char * rhost_new, * proto_new, * iaddr_new;
 	if (!retrieveStringFromJsonObj(data.response, json_tag_rhost, &rhost_new))
 	{
 		syslog(LOG_WARNING, "Fail to retrieve remote host from response of onos.");
@@ -835,7 +835,7 @@ retrievePortNumberArrayFromJsonObj(struct json_object *jobj, const char *key,
 
 	int json_int;
 	struct json_object * entry;
-	for (int i = 0;i < arr_len; i++) {
+	for (size_t i = 0;i < arr_len; i++) {
 		entry = json_object_array_get_idx(tmp, i);
 
 		if (json_object_get_type(entry) != json_type_int) {
@@ -872,10 +872,10 @@ retrievePortmappingArrayFromJsonObj(struct json_object *jobj, const char *key,
 	unsigned int index = 0;
 
 	struct json_object * entry;
-	for (int i = 0;i < arr_len; i++) {
+	for (size_t i = 0;i < arr_len; i++) {
 		entry = json_object_array_get_idx(tmp, i);
 
-		const char *rhost, *iaddr, *proto;
+		char *rhost, *iaddr, *proto;
 		unsigned short eport, iport;
 		unsigned int leaseduration;
 		if (retrieveStringFromJsonObj(entry, json_tag_rhost, &rhost)
@@ -903,11 +903,21 @@ retrievePortmappingArrayFromJsonObj(struct json_object *jobj, const char *key,
 	return true;
 }
 
+/*
+	Return 0 if two strings are case-insensitively equal.
+	Return -1 otherwise.
+*/
 static int
-strcmpcaseignore(char * proto_new, char * proto) {
-	for(char *ptr = proto_new;*ptr;ptr++) *ptr = tolower(*ptr);
-
-	for(char *ptr = proto;*ptr;ptr++) *ptr = tolower(*ptr);
-
-	return strcmp(proto_new, proto);
+cmpCaseInsensitive(const char * a, const char * b) {
+	size_t len = strlen(a);
+	if (len != strlen(b))
+		return -1;
+	
+	for(size_t i = 0;i < len;i++) {
+		if (a[i] != b[i] && 
+			((b[i] < 91 && a[i] != b[i]+32) || (b[i] > 91 && a[i] != b[i]-32))) {
+				return -1;
+		}
+	}
+	return 0;
 }

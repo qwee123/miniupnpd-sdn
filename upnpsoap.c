@@ -40,7 +40,7 @@
 #endif
 
 #ifdef USE_JWT_AUTH
-#include "jwtauth/auth.h"
+#include "jwtauth.h"
 #endif
 
 /* utility function */
@@ -270,7 +270,6 @@ GetCommonLinkProperties(struct upnphttp * h, const char * action, const char * n
 	const char * status = "Up";	/* Up, Down (Required),
 	                             * Initializing, Unavailable (Optional) */
 	const char * wan_access_type = "Cable"; /* DSL, POTS, Cable, Ethernet */
-	char ext_ip_addr[INET_ADDRSTRLEN];
 
 #ifdef USE_SDN
 	if(get_sdn_igd_iface_status(&data) >= 0) {
@@ -279,6 +278,7 @@ GetCommonLinkProperties(struct upnphttp * h, const char * action, const char * n
 		status = data.status;
 	}
 #else
+	char ext_ip_addr[INET_ADDRSTRLEN];
 	if((downstream_bitrate == 0) || (upstream_bitrate == 0))
 	{
 		if(getifstats(ext_if_name, &data) >= 0)
@@ -570,7 +570,7 @@ AddPortMapping(struct upnphttp * h, const char * action, const char * ns)
 	}
 
 #ifdef USE_JWT_AUTH
-	if (-1 == VerifyAuth())
+	if (-1 == VerifyAuth(h->req_buf+h->req_AuthOff, h->req_AuthLen, action))
 	{
 		ClearNameValueList(&data);
 		SoapError(h, 606, "Action not authorized");
@@ -912,7 +912,7 @@ GetSpecificPortMappingEntry(struct upnphttp * h, const char * action, const char
 	 * We prevent several Port Mapping with same external port
 	 * but different remoteHost to be set up, so that is not
 	 * a priority. */
-	r = upnp_get_redirection_infos( eport, protocol, &iport,
+	r = upnp_get_redirection_infos(eport, protocol, &iport,
 	                               int_ip, sizeof(int_ip),
 	                               desc, sizeof(desc),
 #ifdef USE_SDN
@@ -1279,13 +1279,6 @@ GetListOfPortMappings(struct upnphttp * h, const char * action, const char * ns)
 	size_t bodyalloc;
 	int bodylen;
 
-	int r = -1;
-	unsigned short iport;
-	char int_ip[32];
-	char desc[64];
-	char rhost[64];
-	unsigned int leaseduration = 0;
-
 	struct NameValueParserData data;
 	const char * startport_s, * endport_s;
 	unsigned short startport, endport;
@@ -1296,6 +1289,12 @@ GetListOfPortMappings(struct upnphttp * h, const char * action, const char * ns)
 #ifdef USE_SDN
 	struct portmapping_entry * entry_list;
 #else
+	int r = -1;
+	unsigned short iport;
+	char int_ip[32];
+	char desc[64];
+	char rhost[64];
+	unsigned int leaseduration = 0;
 	unsigned short * entry_list;
 #endif
 	unsigned int i, list_size = 0;

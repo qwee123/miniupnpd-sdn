@@ -14,8 +14,7 @@ enum http_response_code {
     UNKNOWNERRORCODE
 };
 
-static char *http_response_code_to_string[] =
-    { "200", "400", "404", "405", "409," "500", "UnknownCode" };
+extern char *http_response_code_to_string[];
 
 struct http_options {
     const char * req_url;

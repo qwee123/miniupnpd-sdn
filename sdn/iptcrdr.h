@@ -58,8 +58,10 @@ add_peer_dscp_rule2(const char * rhost, unsigned short rport,
                    unsigned short iport, int proto,
                    const char * desc, unsigned int timestamp);
 
-int get_nat_ext_addr(struct sockaddr* src, struct sockaddr *dst, uint8_t proto,
-                     struct sockaddr* ret_ext);
+int
+get_nat_ext_addr(struct sockaddr* src, struct sockaddr *dst, uint8_t proto,
+                 struct sockaddr* ret_ext);
+
 int
 get_peer_rule_by_index(int index, unsigned short * eport,
                         char * iaddr, int iaddrlen, unsigned short * iport,

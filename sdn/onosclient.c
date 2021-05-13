@@ -17,6 +17,9 @@ static const char *uri_portmapping = "/portmapping";
 static const char *uri_portmapping_portrange = "/portmapping/range";
 static const char *uri_portmapping_index = "/portmapping/index";
 
+char *http_response_code_to_string[] =
+    { "200", "400", "404", "405", "409," "500", "UnknownCode" };
+
 void sendGetRequest(struct mg_connection *c, struct http_options *options) {
 
     static const char resp[] =

@@ -2110,9 +2110,12 @@ main(int argc, char * * argv)
 	struct ctlelem * ectlnext;
 #endif
 	struct runtime_vars v;
+#ifndef USE_SDN
 	/* variables used for the unused-rule cleanup process */
+	/* useless in sdn mode */
 	struct rule_state * rule_list = 0;
 	struct timeval checktime = {0, 0};
+#endif
 	struct lan_addr_s * lan_addr;
 #ifdef ENABLE_UPNPPINHOLE
 	unsigned int next_pinhole_ts;

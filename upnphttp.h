@@ -76,7 +76,7 @@ struct upnphttp {
 	int req_Timeout;
 	int req_SIDOff;		/* For UNSUBSCRIBE */
 	int req_SIDLen;
-#ifdef USE_CUSTOM_PERM_MECHANISM
+#ifdef USE_JWT_AUTH
 	int req_AuthOff;
 	int req_AuthLen;
 	int req_SigOff;

@@ -346,10 +346,6 @@ upnp_redirect(const char * rhost, unsigned short eport,
 #endif
 			  )
 {
-	int r;
-	char iaddr_old[32];
-	char rhost_old[32];
-	unsigned short iport_old;
 	struct in_addr address;
 #ifdef USE_SDN
 	const char * proto = protocol;
@@ -405,7 +401,6 @@ upnp_redirect(const char * rhost, unsigned short eport,
 	 *     =         =           =           ≠         Failure
 	 *     =         =           =           =         Success (overwrite)
 	 */
-	rhost_old[0] = '\0';
 
 #ifdef USE_SDN
 	syslog(LOG_INFO, "redirecting port %hu to %s:%hu protocol %s",
@@ -423,6 +418,12 @@ upnp_redirect(const char * rhost, unsigned short eport,
 	* iaddr_old, iport_old, rhost_old will contain the corresponding value of the matched rule
 	* after the function call.
 	*/
+	int r;
+	char iaddr_old[32];
+	char rhost_old[32];
+	unsigned short iport_old;
+
+	rhost_old[0] = '\0';
 	r = get_redirect_rule(ext_if_name, eport, proto,
 	                      iaddr_old, sizeof(iaddr_old), &iport_old, 0, 0,
 	                      rhost_old, sizeof(rhost_old),
@@ -555,8 +556,6 @@ upnp_redirect_internal(const char * rhost, unsigned short eport,
 #endif
 }
 
-
-
 /* Firewall independent code which call the FW dependent code. */
 int
 upnp_get_redirection_infos(unsigned short eport, const char * protocol,
@@ -567,8 +566,6 @@ upnp_get_redirection_infos(unsigned short eport, const char * protocol,
                            unsigned int * leaseduration)
 {
 	int r;
-	unsigned int timestamp;
-	time_t current_time;
 
 	if(desc && (desclen > 0))
 		desc[0] = '\0';
@@ -579,6 +576,9 @@ upnp_get_redirection_infos(unsigned short eport, const char * protocol,
 	                      rhost, rhostlen, leaseduration,
 	                      0, 0);
 #else
+	unsigned int timestamp;
+	time_t current_time;
+
 	if(rhost && (rhostlen > 0))
 		rhost[0] = '\0';
 
@@ -723,6 +723,7 @@ upnp_get_portmapping_number_of_entries()
 #endif
 }
 
+#ifndef USE_SDN
 /* functions used to remove unused rules
  * As a side effect, delete expired rules (based on LeaseDuration) */
 struct rule_state *
@@ -744,10 +745,7 @@ get_upnp_rules_state_list(int max_rules_number_target)
 		return 0;
 	current_time = upnp_time();
 	nextruletoclean_timestamp = 0;
-	while(get_redirect_rule_by_index(i,
-#ifndef USE_SDN 
-	                                /*ifname*/0,
-#endif
+	while(get_redirect_rule_by_index(i, /*ifname*/0,
 									&tmp->eport, 0, 0,
 	                                &iport, &proto, 0, 0, 0,0, &timestamp,
 								    &tmp->packets, &tmp->bytes) >= 0)
@@ -805,11 +803,7 @@ get_upnp_rules_state_list(int max_rules_number_target)
 		{
 			syslog(LOG_NOTICE, "remove port mapping %hu %s because it has expired",
 			       tmp->eport, proto_itoa(tmp->proto));
-#ifdef USE_SDN
-			_upnp_delete_redir(tmp->eport, "", tmp->proto);
-#else
 			_upnp_delete_redir(tmp->eport, tmp->proto);
-#endif
 				
 			*p = tmp->next;
 			free(tmp);
@@ -834,9 +828,7 @@ void
 remove_unused_rules(struct rule_state * list)
 {
 //	unused variable
-#ifndef USE_SDN
 	char ifname[IFNAMSIZ];
-#endif
 	unsigned short iport;
 	struct rule_state * tmp;
 	u_int64_t packets;
@@ -847,10 +839,7 @@ remove_unused_rules(struct rule_state * list)
 	while(list)
 	{
 		/* remove the rule if no traffic has used it */
-		if(get_redirect_rule(
-#ifndef USE_SDN
-                             ifname,
-#endif
+		if(get_redirect_rule(ifname,
 							 list->eport, list->proto,
  	                         0, 0, &iport, 0, 0, 0, 0, &timestamp,
 		                     &packets, &bytes) >= 0)
@@ -861,11 +850,7 @@ remove_unused_rules(struct rule_state * list)
 				       "%" PRIu64 "packets %" PRIu64 "bytes",
 				       list->eport, proto_itoa(list->proto),
 				       packets, bytes);
-#ifdef USE_SDN
-				_upnp_delete_redir(tmp->eport, "", list->proto); //Use empty string to replace rhost temporary
-#else
 				_upnp_delete_redir(tmp->eport, list->proto);
-#endif
 				n++;
 			}
 		}
@@ -876,6 +861,8 @@ remove_unused_rules(struct rule_state * list)
 	if(n>0)
 		syslog(LOG_NOTICE, "removed %d unused rules", n);
 }
+
+#endif
 
 /* upnp_get_portmappings_in_range()
  * return a list of all "external" ports for which a port
