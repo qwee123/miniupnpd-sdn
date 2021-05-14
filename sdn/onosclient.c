@@ -3,7 +3,7 @@
 #include <string.h>
 #include <syslog.h>
 #include <errno.h>
-#include "json/json_tokener.h"
+#include "../json/json_tokener.h"
 #include "mongoose/mongoose.h"
 #include "onosclient.h"
 

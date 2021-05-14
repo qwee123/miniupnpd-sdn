@@ -39,7 +39,7 @@ STRIP ?= strip # strip unecessary information (e.g. debug info) from the file
 PKG_CONFIG ?= pkg-config
 CP = cp
 DOXYGEN ?= doxygen
-JSONBUILDPATH = sdn/json/build
+JSONBUILDPATH = json/build
 
 DEPFLAGS = -MM -MG -MT $(patsubst %.d,%.o,$@) -MT $@
 # -M : with system library(e.g. stdio) headers, -MM : without
@@ -113,6 +113,7 @@ clean:
 	$(RM) miniupnpdctl.o
 	$(RM) validateupnppermissions validategetifaddr validatessdppktgen
 	$(RM) -r dox/
+	$(RM) -r $(JSONBUILDPATH)
 
 install:	miniupnpd $(SRCDIR)/miniupnpd.8 miniupnpd.conf \
 	$(SRCDIR)/linux/miniupnpd.init.d.script
@@ -147,7 +148,7 @@ miniupnpd.conf:	$(SRCDIR)/miniupnpd.conf
 
 include $(SRCDIR)/check.mk
 
-miniupnpd:	$(BASEOBJS) $(LNXOBJS) $(SDNOBJS) $(JSONLIB)
+miniupnpd:	$(BASEOBJS) $(LNXOBJS) $(SDNOBJS) $(JSONLIB) 
 
 testupnpdescgen:	$(TESTUPNPDESCGENOBJS)
 
@@ -198,7 +199,7 @@ dox:	$(SRCDIR)/miniupnpd.doxyconf
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
 $(JSONLIB):
-	cd $(JSONBUILDPATH) && cmake .. && make
+	mkdir $(JSONBUILDPATH) && cd $(JSONBUILDPATH) && cmake .. && make
 
 print-%:
 	@echo "$* = $($*)"

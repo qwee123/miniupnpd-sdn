@@ -42,6 +42,7 @@ STRIP ?= strip
 PKG_CONFIG ?= pkg-config
 CP = cp
 DOXYGEN ?= doxygen
+JSONBUILDPATH = json/build
 
 DEPFLAGS = -MM -MG -MT $(patsubst %.d,%.o,$@) -MT $@
 # -M : with system headers, -MM : without
@@ -56,6 +57,7 @@ include $(SRCDIR)/gitrev.mk
 include $(SRCDIR)/objects.mk
 
 # sources in netfilter/ directory
+JSONLIB = $(JSONBUILDPATH)/libjson-c.a
 NETFILTEROBJS = iptcrdr.o iptpinhole.o nfct_get.o
 
 ALLOBJS = $(BASEOBJS) $(LNXOBJS) $(NETFILTEROBJS)
@@ -129,6 +131,7 @@ clean:
 	$(RM) miniupnpdctl.o
 	$(RM) validateupnppermissions validategetifaddr validatessdppktgen
 	$(RM) -r dox/
+	$(RM) -r $(JSONBUILDPATH)
 
 install:	miniupnpd $(SRCDIR)/miniupnpd.8 miniupnpd.conf \
 	$(NETFILTER_SCRIPTS) \
@@ -162,7 +165,7 @@ endif
 
 include $(SRCDIR)/check.mk
 
-miniupnpd:	$(BASEOBJS) $(LNXOBJS) $(NETFILTEROBJS)
+miniupnpd:	$(BASEOBJS) $(LNXOBJS) $(NETFILTEROBJS) $(JSONLIB)
 
 testupnpdescgen:	$(TESTUPNPDESCGENOBJS)
 
@@ -208,6 +211,9 @@ dox:	$(SRCDIR)/miniupnpd.doxyconf
 
 %.o:	$(SRCDIR)/netfilter/%.c
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
+
+$(JSONLIB):
+	mkdir $(JSONBUILDPATH) && cd $(JSONBUILDPATH) && cmake .. && make
 
 print-%:
 	@echo "$* = $($*)"

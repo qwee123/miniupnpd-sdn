@@ -2,7 +2,7 @@
 #define ONOSCLIENT_H
 
 #include "mongoose/mongoose.h"
-#include "json/json_object.h"
+#include "../json/json_object.h"
 
 enum http_response_code {
     OK_200,

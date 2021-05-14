@@ -25,7 +25,7 @@
 #include "../macros.h"
 #include "iptcrdr.h"
 #include "../upnpglobalvars.h"
-#include "json/json_object.h"
+#include "../json/json_object.h"
 
 #define DEFAULT_PORTMAPPING_CAP 64
 #define ISVALID_USHORT(x) \

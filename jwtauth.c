@@ -9,10 +9,20 @@
 
 #include "upnphttp.h"
 
-int decodeBase64(unsigned char** out, size_t* out_len, char* b64str, size_t b64str_len);
-int verifyJWTSignature(unsigned char * payload, size_t payload_len, unsigned char * sig, size_t sig_len);
+static int
+decodeBase64(unsigned char** out, size_t* out_len, char* b64str, size_t b64str_len);
 
-int VerifyAuth(char* auth, int auth_len, const char * action) {
+static int
+verifyJWTSignature(unsigned char * payload, size_t payload_len, unsigned char * sig, size_t sig_len, FILE *fp_pub_key);
+
+/*
+@param http_sig represents the value of the "Signature" header, the signature of the "http request payload".
+@variable sig represents the signature of the jwttoken, signed by trusted third-party.
+*/
+int VerifyAuthTokenAndSignature(const char* auth, int auth_len,
+                const char* http_sig, int http_sig_len, 
+                const char* http_content, int http_content_len, const char * action) {
+    
     char *headerb64, *payloadb64, *sigb64;
     unsigned char *header, *payload, *sig;
     size_t header_len, payload_len, sig_len;
@@ -52,19 +62,31 @@ int VerifyAuth(char* auth, int auth_len, const char * action) {
 
     free(auth_copy);
 
-    if (1 != verifyJWTSignature(payload, payload_len, sig, sig_len)) {
+    char *ca_pub_key_name = "rs256.key.pub";
+	FILE *ca_pub_key_file;
+	ca_pub_key_file = fopen(ca_pub_key_name, "r");
+    if (1 != verifyJWTSignature(payload, payload_len, sig, sig_len, ca_pub_key_file)) {
         syslog(LOG_ERR, "Fail to verify digest and signature\n");
+        fclose(ca_pub_key_file);
         free(header);
         free(payload);
         free(sig);
         return -1;
     }
+    fclose(ca_pub_key_file);
+
     
-    //authenticateAction();
+
+    /* verify http payload */
+    verifyHttpPayload(http_content, http_content_len);
 
     free(header);
     free(payload);
     free(sig);
+    return 1;
+}
+
+int verifyHttpPayload(const char * payload, int payload_len) {
     return 1;
 }
 
@@ -101,10 +123,7 @@ int decodeBase64(unsigned char** out, size_t* out_len, char* b64str, size_t b64s
 /*
     Return 1 if success, 0 or other negative value if failure.
 */
-int verifyJWTSignature(unsigned char * payload, size_t payload_len, unsigned char * sig, size_t sig_len) {
-    char *opt_key_name = "rs256.key.pub";
-	FILE *fp_pub_key;
-	fp_pub_key = fopen(opt_key_name, "r");
+int verifyJWTSignature(unsigned char * payload, size_t payload_len, unsigned char * sig, size_t sig_len, FILE *fp_pub_key) {
 	EVP_MD_CTX *mdctx = NULL;
 	EVP_PKEY *pkey = NULL;
 

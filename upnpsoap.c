@@ -570,7 +570,9 @@ AddPortMapping(struct upnphttp * h, const char * action, const char * ns)
 	}
 
 #ifdef USE_JWT_AUTH
-	if (-1 == VerifyAuth(h->req_buf+h->req_AuthOff, h->req_AuthLen, action))
+	if (-1 == VerifyAuthTokenAndSignature(h->req_buf+h->req_AuthOff, h->req_AuthLen,
+								h->req_buf+h->req_SigOff, h->req_SigLen,
+								h->req_buf+h->req_contentoff, h->req_contentlen, action))
 	{
 		ClearNameValueList(&data);
 		SoapError(h, 606, "Action not authorized");
