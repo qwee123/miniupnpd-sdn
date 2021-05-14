@@ -48,7 +48,7 @@ int
 get_redirect_rule(unsigned short eport, const char * proto,
                   char * iaddr, int iaddrlen, unsigned short * iport,
                   char * desc, int desclen,
-                  char * rhost, int rhostlen,
+                  const char * rhost, int rhostlen,
                   unsigned int * leaseduration,
                   u_int64_t * packets, u_int64_t * bytes);
 

@@ -64,7 +64,7 @@ static struct mg_mgr mgr;
 /* local functions declarations */
 static bool
 retrieveStringFromJsonObj(struct json_object *jobj,
-			 const char *key, char ** ret);
+			 const char *key, const char ** ret);
 
 static bool
 retrieveIntFromJsonObj(struct json_object *jobj,
@@ -123,7 +123,7 @@ int get_sdn_igd_external_ip_addr(char * ret_addr, size_t max_len)
 	
 	while(!data.done) mg_mgr_poll(&mgr, 1000);
 
-	char * ip;
+	const char * ip;
 	if (data.response_code != OK_200) {
 		syslog(LOG_WARNING, "Got http error code %s during get external ip action",
 										http_response_code_to_string[data.response_code]);
@@ -158,7 +158,7 @@ int get_sdn_igd_wan_conn_status(void) {
 		return -1;
 	}
 
-	char * wan_conn_stat;
+	const char * wan_conn_stat;
 	if (!retrieveStringFromJsonObj(data.response, json_tag_wan_conn_status, &wan_conn_stat)) 
 	{
 		syslog(LOG_WARNING, "Fail to retreive WAN connection status from the response of onos");
@@ -183,7 +183,7 @@ int get_sdn_igd_iface_status(struct igd_iface_status * ret_data)
 
 	while(!data.done) mg_mgr_poll(&mgr, 1000);
 	
-	char *iface_status;
+	const char *iface_status;
 	unsigned int baudrate, bytes_sent, bytes_recv, pkt_sent, pkt_recv;
 
 	if (data.response_code != OK_200) {
@@ -440,7 +440,7 @@ int
 get_redirect_rule(unsigned short eport, const char * proto,
                   char * iaddr, int iaddrlen, unsigned short * iport,
                   char * desc, int desclen,
-                  char * rhost, int rhostlen,
+                  const char * rhost, int rhostlen,
                   unsigned int * leaseduration,
                   u_int64_t * packets, u_int64_t * bytes)
 {
@@ -472,8 +472,7 @@ get_redirect_rule(unsigned short eport, const char * proto,
 		return -1;
 	}
 
-	char * rhost_new, * iaddr_new;
-	char * proto_new;
+	const char * rhost_new, * iaddr_new, * proto_new;
 	unsigned short eport_new;
 	if (!retrieveStringFromJsonObj(data.response, json_tag_rhost, &rhost_new)
 		|| strcmp(rhost_new, rhost) != 0)
@@ -492,7 +491,7 @@ get_redirect_rule(unsigned short eport, const char * proto,
 	}
 
 	if (!retrieveStringFromJsonObj(data.response, json_tag_proto, &proto_new)
-		|| cmpCaseInsensitive(proto_new, proto) != 0) 
+		|| cmpCaseInsensitive(proto_new, proto) != 0)
 	{
 		syslog(LOG_WARNING, "Fail to retrieve protocol from response of onos."
 			" Or the received protocol is not equeal to the requested one.");
@@ -557,7 +556,7 @@ get_redirect_rule_by_index(int index, unsigned short * eport,
 	}
 
 
-	char * rhost_new, * proto_new, * iaddr_new;
+	const char * rhost_new, * proto_new, * iaddr_new;
 	if (!retrieveStringFromJsonObj(data.response, json_tag_rhost, &rhost_new))
 	{
 		syslog(LOG_WARNING, "Fail to retrieve remote host from response of onos.");
@@ -730,7 +729,7 @@ delete_portmappings_in_range(unsigned short startport,
 }
 
 static bool
-retrieveStringFromJsonObj(struct json_object *jobj, const char *key, char ** ret) {
+retrieveStringFromJsonObj(struct json_object *jobj, const char *key, const char ** ret) {
 	struct json_object *tmp;
 	if (!json_object_object_get_ex(jobj, key, &tmp)) {
 		syslog(LOG_WARNING, "Fail to extract %s from json object\n", key);
@@ -742,8 +741,9 @@ retrieveStringFromJsonObj(struct json_object *jobj, const char *key, char ** ret
 		return false;
 	}
 
+	//the string extracted from json-c is guranteed to be null-terminated after code tracing.
+    //See json_tokener.c: _json_object_new_string()
 	*ret = json_object_get_string(tmp);
-	(*ret)[json_object_get_string_len(tmp)] = '\0';
     return true;
 }
 
@@ -875,7 +875,7 @@ retrievePortmappingArrayFromJsonObj(struct json_object *jobj, const char *key,
 	for (size_t i = 0;i < arr_len; i++) {
 		entry = json_object_array_get_idx(tmp, i);
 
-		char *rhost, *iaddr, *proto;
+		const char *rhost, *iaddr, *proto;
 		unsigned short eport, iport;
 		unsigned int leaseduration;
 		if (retrieveStringFromJsonObj(entry, json_tag_rhost, &rhost)

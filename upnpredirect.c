@@ -562,7 +562,7 @@ upnp_get_redirection_infos(unsigned short eport, const char * protocol,
                            unsigned short * iport,
                            char * iaddr, int iaddrlen,
                            char * desc, int desclen,
-                           char * rhost, int rhostlen,
+                           const char * rhost, int rhostlen,
                            unsigned int * leaseduration)
 {
 	int r;

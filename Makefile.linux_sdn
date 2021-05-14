@@ -171,7 +171,7 @@ testportinuse:	testportinuse.o portinuse.o getifaddr.o \
 testminissdp:	testminissdp.o minissdp.o upnputils.o upnpglobalvars.o \
 	asyncsendto.o getroute.o
 
-testjwtauth:	testjwtauth.o jwtauth.o
+testjwtauth:	testjwtauth.o jwtauth.o $(JSONLIB)
 
 miniupnpdctl:	miniupnpdctl.o
 
