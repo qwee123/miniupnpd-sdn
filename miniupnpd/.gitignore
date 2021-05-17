@@ -35,11 +35,6 @@ config.mk
 netfilter_nft/testnftnlrdr
 netfilter_nft/testnftpinhole
 netfilter_nft/test_nfct_get
-py_test_utils/bin/
-py_test_utils/include/
-py_test_utils/lib/
-py_test_utils/lib64/
-py_test_utils/results/
 .configure.cache
 *.key
 *.key.pub

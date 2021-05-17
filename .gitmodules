@@ -1,3 +1,3 @@
 [submodule "sdn/json"]
-	path = json
+	path = miniupnpd/json/json
 	url = https://github.com/json-c/json-c.git
