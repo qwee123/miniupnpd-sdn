@@ -7,7 +7,7 @@ device = upnp.get_igd()
 # We will access it like a dictionary instead:
 service = device['WANIPConn1']
 service2 = device['WANCommonIFC1']
-
+'''
 print("AddAnyPortMapping: ", service.AddAnyPortMapping(
     NewRemoteHost="*",
     NewExternalPort=6667,
@@ -18,7 +18,7 @@ print("AddAnyPortMapping: ", service.AddAnyPortMapping(
     NewPortMappingDescription="",
     NewLeaseDuration=10000
 ))
-
+'''
 '''
 print("AddPortMapping: ", service.AddPortMapping(
     NewRemoteHost="*",
@@ -30,12 +30,13 @@ print("AddPortMapping: ", service.AddPortMapping(
     NewPortMappingDescription="",
     NewLeaseDuration=10000
 ))
-
+'''
 print("GetListOfPortMappings", service.GetListOfPortMappings(
     NewStartPort=20,
     NewEndPort=60000,
     NewProtocol="tcp",
     NewManage=False,
-    NewNumberOfPorts=20
+    NewNumberOfPorts=20,
+    cert="qweqwe"
 ))
-'''
+

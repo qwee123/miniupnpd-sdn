@@ -30,7 +30,7 @@ def getPortMapping():
             \"duration\":4294967295\
         }"
 
-@app.route("/portmapping/portrange", methods=['GET'])
+@app.route("/portmapping/range", methods=['GET'])
 def getPortMappingRange():
     return "\
         {\
