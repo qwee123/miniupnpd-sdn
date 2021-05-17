@@ -131,7 +131,6 @@ clean:
 	$(RM) miniupnpdctl.o
 	$(RM) validateupnppermissions validategetifaddr validatessdppktgen
 	$(RM) -r dox/
-	$(RM) -r $(JSONBUILDPATH)
 
 install:	miniupnpd $(SRCDIR)/miniupnpd.8 miniupnpd.conf \
 	$(NETFILTER_SCRIPTS) \
