@@ -3,4 +3,4 @@
 	url = https://github.com/json-c/json-c.git
 [submodule "py_auth_client/upnpy"]
 	path = py_auth_client/upnpy
-	url = https://github.com/5kyc0d3r/upnpy.git
+	url = https://github.com/qwee123/upnpy-auth.git
