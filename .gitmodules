@@ -1,3 +1,6 @@
 [submodule "sdn/json"]
 	path = miniupnpd/json/json
 	url = https://github.com/json-c/json-c.git
+[submodule "py_auth_client/upnpy"]
+	path = py_auth_client/upnpy
+	url = https://github.com/5kyc0d3r/upnpy.git
