@@ -2,5 +2,5 @@
 	path = miniupnpd/json/json
 	url = https://github.com/json-c/json-c.git
 [submodule "py_auth_client/upnpy"]
-	path = py_auth_client/upnpy
+	path = py_auth_client/upnpy_auth
 	url = https://github.com/qwee123/upnpy-auth.git
