@@ -129,13 +129,13 @@ int VerifyAuthTokenAndSignature(const char* auth, int auth_len,
         free(payload);
         return -1;
     }
-    
+
     //verify if the action is permitted.
 
     json_object_put(payload_json); //this also free client_pubkey
     free(http_sig);
     free(payload);
-    
+
     return 1;
 }
 
@@ -200,6 +200,11 @@ verifySignatureFromKeyFile(const char * payload, size_t payload_len, const unsig
 	pub_key_file = fopen(pub_key_path, "r");
     EVP_PKEY * pkey;
     int r;
+
+    if (pub_key_file == NULL) {
+        syslog(LOG_ERR, "No such file %s\n", pub_key_path);
+        return -1;
+    }
 
     pkey = PEM_read_PUBKEY(pub_key_file, NULL, NULL, NULL);
     if (pkey == NULL) {

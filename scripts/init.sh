@@ -6,7 +6,7 @@ controller_port=
 controller_container_name=
 client_gateway=172.16.0.1
 miniupnpd_addr=172.16.0.100
-miniupnpd_version=v6
+miniupnpd_version=v7
 
 if [ -z "$1" ]; then
 	echo "Please Specify an experiment situation, it's either 'pytest' or 'onos'"
@@ -23,7 +23,7 @@ case "$1" in
 			fi
 		fi
 		controller_container_name=py_test_server
-		controller_port=60000
+		controller_port=40000
 		;;
 	onos )	
 		if [ ! "$(docker ps -q -f name='^onos$')" ]; then
