@@ -105,14 +105,14 @@ int VerifyAuthTokenAndSignature(const char* auth, int auth_len,
         free(payload);
         return -1;
     }
-    printf("test\n");
+
     const char * client_pubkey;
     if (1 != retrieveStringFromJsonObj(payload_json, "public_key", &client_pubkey)) {
         syslog(LOG_ERR, "Fail to extract client's public key from the jwt token.");
         free(payload);
         return -1;
     }
-    printf("test\n");
+
     /* Decode the http signature through base64 */ 
     if (1 != decodeBase64(&http_sig, &http_sig_len, http_sigb64, http_sigb64_len))
     {
@@ -121,7 +121,7 @@ int VerifyAuthTokenAndSignature(const char* auth, int auth_len,
         free(payload);
 		return -1;
     }
-    printf("test\n");
+
     /* verify http payload */
     if (1 != verifySignature(http_content, http_content_len, http_sig, http_sig_len, client_pubkey)) {
         syslog(LOG_ERR, "The content of the http request does not match the signature.");
@@ -129,13 +129,13 @@ int VerifyAuthTokenAndSignature(const char* auth, int auth_len,
         free(payload);
         return -1;
     }
-    printf("test\n");
+
     //verify if the action is permitted.
 
     json_object_put(payload_json); //this also free client_pubkey
     free(http_sig);
     free(payload);
-    printf("test\n");
+
     return 1;
 }
 
