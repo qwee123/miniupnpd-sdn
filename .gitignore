@@ -3,4 +3,6 @@ py_test_utils/include
 py_test_utils/lib
 py_test_utils/lib64
 py_test_utils/share
-pyvenv.cfg
+py_test_utils/pyvenv.cfg
+py_auth_client/__pycache__
+py_auth_client/*.key

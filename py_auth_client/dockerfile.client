@@ -1,0 +1,14 @@
+FROM python:3.6-buster
+
+RUN apt update && apt install -y net-tools iputils-ping vim tcpdump
+
+RUN python3 -m pip install pyOpenSSL
+
+COPY ./upnpy_auth/requirements.txt .
+RUN python3 -m pip install -r requirements.txt
+
+COPY ./upnpy_auth ./upnpy_auth
+COPY ./token.jwt ./rs256.key ./
+COPY ./client.py .
+
+CMD /bin/bash
