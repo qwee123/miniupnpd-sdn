@@ -1,5 +1,5 @@
 from flask import Flask, request
-from utils import VerifyPassword
+from utils import VerifyPassword, GenerateToken
 import mariadb
 
 app = Flask(__name__)
@@ -35,9 +35,13 @@ def applyToken():
 
     result = cursor.fetchall()
     if len(result) != 1 or result[0][0] != username:
-        return "Error", 500
+        return "login failed.", 403
     elif VerifyPassword(result[0][1], password):
-        return "Success!"
+        token = GenerateToken(pubkey, signkey)
+        if token == "":
+            return "Fail to Generate token.", 500
+        else:
+            return token
     else:
         return "login failed.", 403
 
@@ -46,16 +50,25 @@ with open("password.txt", "r") as f:
     db_pass = f.read()
     f.close()
 
+with open("ca_rs256.key", "r") as f:
+    signkey = f.read()
+    f.close()
+
 conn = initDB("172.17.0.2", 3306)
 
 # Only execute testcase when this script is executed directly
 if __name__ == "__main__":
 
+    with open("rs256.key.pub", "r") as f:
+        pubkey = f.read()
+        f.close()
+
     with app.test_client() as client:
         print("test client.\n")
-        rv = client.post('/login', data=dict(
+        rv = client.post('/applyToken', data=dict(
             username="user1",
-            password="testestest"
+            password="testestest",
+            pubkey=pubkey
         ))
 
         print(rv.status_code)
