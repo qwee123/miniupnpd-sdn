@@ -1,0 +1,10 @@
+CREATE DATABASE IF NOT EXISTS userdb;
+use userdb;
+
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER UNSIGNED PRIMARY KEY /*!40101 AUTO_INCREMENT */,
+  username VARCHAR(64) NOT NULL UNIQUE,
+  password TEXT
+);
+
+INSERT INTO users (username, password) VALUES ("user1", "$argon2id$v=19$m=102400,t=2,p=8$wPlCNl16IBJEi06WY6D8Ag$W7S0Qqy1eD0RtHQ43oVm/w");
