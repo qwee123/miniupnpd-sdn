@@ -82,7 +82,7 @@ int VerifyAuthTokenAndSignature(const char* auth, int auth_len,
     memcpy(token_payload + header_len, payload, payload_len);
     token_payload[token_payload_len] = '\0';
 
-    char *ca_pub_key_path = "rs256.key.pub";
+    char *ca_pub_key_path = "ca_rs256.key.pub";
     if (1 != verifySignatureFromKeyFile(token_payload, token_payload_len, sig, sig_len, ca_pub_key_path)) {
         syslog(LOG_ERR, "Fail to verify digest and signature\n");
         free(token_payload);
