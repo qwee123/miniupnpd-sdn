@@ -6,14 +6,15 @@
 
 int main(int argc, char ** argv) {
     openlog("Test App: ", LOG_PERROR, LOG_DAEMON);
-    char header[] = "eyAgICAiYWxnIjogIlJTMjU2IiAgICAgfQ==";
+    char header[] = "eyJhbGciOiAiUlMyNTYifQ==";
     int header_len = strlen(header);
-    char payload[] = "eyJhdXRob3JpemVkX3BvcnRfcmFuZ2UiOiIwLTY2NjYiLCJwdWJsaWNfa2V5IjoiLS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUFyMktnZWQraFNGNTlQT29mZnU2dgpVaTUzUzhOSFNXc2xpUEx0N1kwVUxWRVovZTVLaTQrL1RkYm9ucnU5VnhqRys5Q21FSHArTmNDczUvWk5ZYnFBCkRZSWNWZnNjWGxGQ0h4Y2FrcHpXZHFSMW5aS20wZzFrRTNlMzduM0djYTNhZE1IclE5Qy9PRXU3amZ5MmZsZkgKOWd2RTBGVzJxYWNsUGNMMlFEK3BKQ24xc2YwbWlJNkprTEtiem0xVHhMb3o1czVwNjcxUjZIaVptaGEzajYvWgpXaUtiOS9rRXhqbzh5VHY4cVhpTnRmZ1I5cUFXYjZmb2ZuVitQRW0xNnArTVE1ODJSMUE1R3FUdG1wandoWW5wCkhqWFBIa1kxRjlyOGJVc0MwY2Z6S0tXMFBTY0RWUHZnWUJ0SUdEeFhZVjlUV1MyVkFmc01CbWFmQlV0Wlk5YkIKUVFJREFRQUIKLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tIn0=";
+    char payload[] = "CnsKICAgICJhdXRob3JpemVkX3BvcnRfcmFuZ2UiOiAiMTAyNC02MDAwMCIsCiAgICAicHVibGljX2tleSI6ICItLS0tLUJFR0lOIFBVQkxJQyBLRVktLS0tLQpNSUlCSWpBTkJna3Foa2lHOXcwQkFRRUZBQU9DQVE4QU1JSUJDZ0tDQVFFQXIyS2dlZCtoU0Y1OVBPb2ZmdTZ2ClVpNTNTOE5IU1dzbGlQTHQ3WTBVTFZFWi9lNUtpNCsvVGRib25ydTlWeGpHKzlDbUVIcCtOY0NzNS9aTllicUEKRFlJY1Zmc2NYbEZDSHhjYWtweldkcVIxblpLbTBnMWtFM2UzN24zR2NhM2FkTUhyUTlDL09FdTdqZnkyZmxmSAo5Z3ZFMEZXMnFhY2xQY0wyUUQrcEpDbjFzZjBtaUk2SmtMS2J6bTFUeExvejVzNXA2NzFSNkhpWm1oYTNqNi9aCldpS2I5L2tFeGpvOHlUdjhxWGlOdGZnUjlxQVdiNmZvZm5WK1BFbTE2cCtNUTU4MlIxQTVHcVR0bXBqd2hZbnAKSGpYUEhrWTFGOXI4YlVzQzBjZnpLS1cwUFNjRFZQdmdZQnRJR0R4WFlWOVRXUzJWQWZzTUJtYWZCVXRaWTliQgpRUUlEQVFBQgotLS0tLUVORCBQVUJMSUMgS0VZLS0tLS0KIgp9Cg==";
     int payload_len = strlen(payload);
-    char signature[] = "UU0KJ/lx7k48PMDxoDDpriPxEBuAbAqc7NAA3fZLIdW58zgE48ZO1RP6eKLRMxmyxCHPU8m1yz5yRZs/nIdll7ppvyNsIw9oBS6iQ/dhNXsGAPnqB/Cx+4I1opQ8AEvaQ65CZot4VCOVcbGPFiDVkTKGIdNoFppKUMQgu2rddBea2oqXOybwL6igJcwh71U/Ml71Zav0iynp+Nmk/b5bIqWqGe2xVSamOcRjA7r73YnUwHgZAG0/0ow5i3iOMyJhQyOaDuufnh/0Pluu6m7fcDypXtlcfd8SINVwryD38qPRcVtB+LdGbJ5SeRdHbo0/9OjmswyW6VX7K5ErvDOwjQ==";
+    char signature[] = "nI0xWUJHE7KBx008r8QXLwU8To+zmLNMcbE5Ak2oFNJgNzwMz6AQ7OcK0wI1Ist3vmb5s1PTwhjnlU+kNTOzoNz/A1+nh/qbB6v72pdlPbcFe3Sc9YanvXQn62GVBGwajKEgdAikeUvmLxHMY9fNAIWpQq1z7GxOR2lw3x+q5Teyio2yLPwMKNuD8Coa3oxSc5XOsrXDu2IGDFJeN04QZo6nBOft4ksJdxgfgThhgyFDGpy19hRoOYguIEG2q+5+tu8OY5eVkA0CjbvEMvN2Fe4/MOo/eqP0eHYp/1+61WYHoRXXQmZF3PZPEhntKNC0t1iE2VIMO5XV66PFSCSuQw==";
     int signature_len = strlen(signature);
 
-    char *testcase = malloc(header_len + payload_len + signature_len + 2);
+    int testcase_len = header_len + payload_len + signature_len + 2; //2 dot
+    char *testcase = malloc(testcase_len + 1);
     int write_offset = 0;
     memcpy(testcase, header, header_len);
     testcase[header_len] = '.';
@@ -23,10 +24,11 @@ int main(int argc, char ** argv) {
     write_offset += (payload_len + 1);
     memcpy(testcase + write_offset, signature, signature_len);
     write_offset += signature_len;
+    testcase[write_offset] = '\0';
 
     char content[] = "Too bad, We got 29 positive cases today.";
     char http_sig[] = "QOL74h5h0X6r1onnWfbMutUt+lLO/yPbhNmgwG5vWq7dbwBGub2x3a3Gt1Uyt7B7iB0M1NaPFz0YRl7Uva1FWJYyl4bGgfz7n1qLd+cTOEii+IEy9UlnjwVlLeB88FJx+FcgI88qXJaagks9qbIWxr3a0l5IFhPPOiipeneddez1IEtpIVb1XqMzeBRssvPYeFTIfZBcNxvOhX22VzMnYskyGJhJDprxZQd8MdbYB4V/RJ5/iZnDGiNBJZIYJzh9MpdnXrrKEQDnK9eHVYFKkmhLSUlbhBxQA97xmFlQXEvt1pPKaHnAAfNtH5wQDAG6ozghb+Lfh7nqC5IzFh7P8g==";
-    
+
     printf("%d\n", VerifyAuthTokenAndSignature(testcase, strlen(testcase), http_sig, strlen(http_sig), content, strlen(content), "action"));
     free(testcase);
     closelog();

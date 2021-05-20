@@ -34,7 +34,7 @@ retrieveStringFromJsonObj(struct json_object *jobj, const char *key, const char 
 int VerifyAuthTokenAndSignature(const char* auth, int auth_len,
                 const char* http_sigb64, int http_sigb64_len, 
                 const char* http_content, int http_content_len, const char * action) {
-    
+
     char *headerb64, *payloadb64, *sigb64;
     char *header, *payload;
     unsigned char *sig, *http_sig;
@@ -77,7 +77,7 @@ int VerifyAuthTokenAndSignature(const char* auth, int auth_len,
 
     /* compose payload of the token siganature */
     int token_payload_len = header_len + payload_len;
-    char * token_payload = malloc(token_payload_len);
+    char * token_payload = malloc(token_payload_len + 1);
     memcpy(token_payload, header, header_len);
     memcpy(token_payload + header_len, payload, payload_len);
     token_payload[token_payload_len] = '\0';
