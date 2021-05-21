@@ -3,17 +3,19 @@ FROM python:3.6-buster
 RUN apt update && apt install -y net-tools iputils-ping vim tcpdump
 
 WORKDIR /app
-COPY ./upnpy_auth ./upnpy_auth
-COPY ./client.py .
+COPY ./*.py ./
+
+ENV FLASK_APP="demo_server.py"
 
 RUN python3 -m pip install pipreqs \
     && pipreqs . \
     && python3 -m pip install -r requirements.txt\
     && python3 -m pip uninstall -y pipreqs
 
-COPY ./user_password.txt ./rs256.key ./rs256.key.pub ./cert.pem ./
+COPY ./*.pem ./ca_rs256.key ./password.txt ./
 
-#default settings
-ENV auth_server_addr="172.16.0.150:50000"
+#default db setting
+ENV db_addr="172.16.0.200"
+ENV db_port=3306
 
-CMD /bin/bash
+CMD ["flask", "run", "--cert", "./cert.pem" ,"--key", "key.pem", "-p", "50000"]

@@ -1,5 +1,6 @@
 from flask import Flask, request
 from utils import VerifyPassword, GenerateToken
+import os
 import mariadb
 
 app = Flask(__name__)
@@ -59,7 +60,11 @@ with open("ca_rs256.key", "r") as f:
     signkey = f.read()
     f.close()
 
-conn = initDB("172.17.0.2", 3306)
+try: 
+    conn = initDB(os.environ['db_addr'], int(os.environ['db_port']))
+except KeyError as e:
+    print("Please set db_addr and db_port as environment variables before proceeding.")
+    exit(-1)
 
 # Only execute testcase when this script is executed directly
 if __name__ == "__main__":

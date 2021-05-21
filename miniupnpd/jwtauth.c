@@ -130,6 +130,7 @@ int VerifyAuthTokenAndSignature(const char* auth, int auth_len,
         return -1;
     }
 
+    printf("%.*s\n", payload_len, payload);
     //verify if the action is permitted.
 
     json_object_put(payload_json); //this also free client_pubkey

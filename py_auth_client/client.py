@@ -1,12 +1,18 @@
 from upnpy_auth import upnpy
 import urllib3
 import requests
+import os
 
 if __name__ == "__main__":
 
     urllib3.disable_warnings(category=urllib3.exceptions.SubjectAltNameWarning) 
     comm_scheme = "https://"
-    auth_server_addr = "127.0.0.1:50000"
+
+    try:
+        auth_server_addr = os.environ['auth_server_addr']
+    except KeyError:
+        print("Please provide the address of the auth_server through environment variables before proceeding.")
+        exit(-1)
 
     with open("user_password.txt", "r") as f:
         auth_password = f.read()
@@ -22,7 +28,7 @@ if __name__ == "__main__":
         'pubkey': pub_key
     }
     r = requests.post(comm_scheme+auth_server_addr+"/applyToken", data=user_cred, verify='./cert.pem')    
-    user_token = r.text
+    auth_token = r.text
 
     with open("rs256.key", "r") as f:
         priv_key = f.read()
