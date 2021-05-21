@@ -1,0 +1,1 @@
+docker stop demo_as_db && docker rm demo_as_db
