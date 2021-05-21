@@ -1,6 +1,7 @@
 import OpenSSL
 import argon2
 import base64
+import json
 from string import Template
 
 def VerifyPassword(passhash, plaintext):
@@ -13,23 +14,28 @@ def VerifyPassword(passhash, plaintext):
 
 token_template = """
 {
-    \"authorized_port_range\": \"$port_range\",
+    \"pub_port_range\": \"$pub_port_range\",
+    \"int_ip_range\": \"$int_ip_range\",
     \"public_key\": \"$pub_key\"
 }
 """
 
-def GenerateToken(pubkey, signkey):
+def GenerateToken(perm_str, pubkey, signkey):
     proof_tp = Template(token_template)
 
-    proof_value = {
-        'port_range': '1024-60000',
-        'pub_key': pubkey
-    }
+    perm = json.loads(perm_str)
+
     try:
-        proof = proof_tp.substitute(proof_value)
+        proof_value = {
+            'int_ip_range': perm['int_ip_range'],
+            'pub_port_range': perm['pub_port_range'],
+        }
     except KeyError as e:
-        print(f'Value of filed {e} is not provided.')
-        return ""
+        print(f'token field {e} is not provided.')
+    proof_value['pub_key'] = pubkey
+
+    #Each field mentioned in the template is guaranteed to be provided here.
+    proof = proof_tp.substitute(proof_value)
 
     header = "{\"alg\": \"RS256\"}"
 

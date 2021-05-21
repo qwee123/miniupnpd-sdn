@@ -31,17 +31,22 @@ def applyToken():
         return "Bad Request", 400
 
     cursor = conn.cursor()
-    cursor.execute("Select username, password from users where username=?", (username,))
-
+    cursor.execute("Select id, username, password from users where username=?", (username,))
+ 
     result = cursor.fetchall()
-    if len(result) != 1 or result[0][0] != username:
+    if len(result) != 1 or result[0][1] != username:
         return "login failed.", 403
-    elif VerifyPassword(result[0][1], password):
-        token = GenerateToken(pubkey, signkey)
+    elif VerifyPassword(result[0][2], password):
+        cursor.execute("Select permission from igdPermission where user_id=?", (result[0][0],))
+        permission = cursor.fetchall()
+        if len(permission) != 1:
+            return "Fail to Generate token.", 500
+
+        token = GenerateToken(permission[0][0], pubkey, signkey)
         if token == "":
             return "Fail to Generate token.", 500
-        else:
-            return token
+
+        return token
     else:
         return "login failed.", 403
 
