@@ -1,12 +1,17 @@
 #!/bin/bash
 
 onos_nfv_network=onosnfv
+auth_database_network=databases
 controller_address=
 controller_port=
 controller_container_name=
 client_gateway=172.16.0.1
 miniupnpd_addr=172.16.0.100
-miniupnpd_version=v7
+miniupnpd_version=v8
+auth_server_addr=172.16.0.150
+auth_server_port=50000
+auth_db_address=
+auth_db_root_pass=$(cat db_pass.txt)
 
 if [ -z "$1" ]; then
 	echo "Please Specify an experiment situation, it's either 'pytest' or 'onos'"
@@ -54,6 +59,10 @@ if [ "$(docker ps -aq -f name='^miniupnpd-sdn$')" ]; then
 	docker stop miniupnpd-sdn && docker rm miniupnpd-sdn
 fi
 
+#db initialization may take up to 15 secs. No connection could be made until the process is complete.
+docker run --name auth_db -e MARIADB_ROOT_PASSWORD=${auth_db_root_pass} --network ${auth_database_network} -td mariadb
+auth_db_address=$(docker inspect auth_db -f '{{ .NetworkSettings.Networks.'${auth_database_network}'.IPAddress }}')
+
 docker run -itd --name miniupnpd-sdn --cap-add NET_ADMIN --cap-add NET_BROADCAST --network ${onos_nfv_network} miniupnpd-sdn:${miniupnpd_version}
 ovs-docker add-port ovs-s3 eth1 miniupnpd-sdn --ipaddress=${miniupnpd_addr}/24
 iface_num=$(docker exec miniupnpd-sdn ip addr show | sed -n 's/\([0-9]*\): \(eth1@\).*/\1/p')
@@ -64,7 +73,7 @@ clientname=
 for i in $(seq 1 2)
 do
 	clientname=client${i}
-	docker run -itd --name ${clientname} --net none --cap-add NET_ADMIN py_test_client
+	docker run -itd --name ${clientname} --net none --cap-add NET_ADMIN -e auth_server_address=${auth_server_addr}":"${auth_server_port} py_test_client
 	ovs-docker add-port ovs-s1 eth0 ${clientname} --ipaddress=172.16.0.$((i+1))/24
 	docker exec ${clientname} ip route add default via ${client_gateway}
 	iface_num=$(docker exec ${clientname} ip addr show | sed -n 's/\([0-9]*\): \(eth0@\).*/\1/p')
@@ -90,3 +99,17 @@ if [ "$1" == onos ]; then
 	ovs-vsctl set-controller ovs-s3 tcp:${controller_address}:${controller_port}
     ovs-vsctl set-controller ovs-r1 tcp:${controller_address}:${controller_port}
 fi
+
+echo "Waiting for database to complete initialization..."
+for i in {1..20}
+do
+    result=$(mysqladmin ping -h ${auth_db_address} -uroot -p${auth_db_root_pass} | grep "mysqld is alive")
+    if [ -n "${result}" ]; then
+        break
+    fi
+    sleep 2
+done
+mysql -h ${auth_db_address} -uroot -p${auth_db_root_pass} < ./init_db.sql
+
+docker run -td --name auth_server --network ${auth_database_network} -e port=${auth_server_port} -e db_addr=${auth_db_address} -e db_port=3306 demo_auth_server
+ovs-docker add-port ovs-s3 eth1 auth_server --ipaddress=${auth_server_addr}/24

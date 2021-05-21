@@ -21,10 +21,12 @@ do
     docker stop ${client} && docker rm ${client}
 done
 
+ovs-docker del-ports ovs-s3 auth_server 
+
 ovs-vsctl del-controller ovs-s1
 ovs-vsctl del-controller ovs-s2
 ovs-vsctl del-controller ovs-s3
 ovs-vsctl del-controller ovs-r1
 
-docker stop onos py_test_server
-docker rm py_test_server
+docker stop auth_db auth_server onos py_test_server
+docker rm auth_db auth_server py_test_server
