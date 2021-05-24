@@ -100,6 +100,9 @@ if [ "$1" == onos ]; then
     ovs-vsctl set-controller ovs-r1 tcp:${controller_address}:${controller_port}
 fi
 
+#Disable stderr during testing database connectivity 
+exec 3>&2
+exec 2> /dev/null
 echo "Waiting for database to complete initialization..."
 for i in {1..20}
 do
@@ -109,6 +112,8 @@ do
     fi
     sleep 2
 done
+exec 2>&3
+
 mysql -h ${auth_db_address} -uroot -p${auth_db_root_pass} < ./init_db.sql
 
 docker run -td --name auth_server --network ${auth_database_network} -e port=${auth_server_port} -e db_addr=${auth_db_address} -e db_port=3306 demo_auth_server
