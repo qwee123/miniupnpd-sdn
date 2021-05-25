@@ -41,6 +41,8 @@
 
 #ifdef USE_JWT_AUTH
 #include "jwtauth.h"
+#include "jwtauthutils.h"
+#include "upnpsoapauth.h"
 #endif
 
 /* utility function */
@@ -569,17 +571,6 @@ AddPortMapping(struct upnphttp * h, const char * action, const char * ns)
 		return;
 	}
 
-#ifdef USE_JWT_AUTH
-	if (-1 == VerifyAuthTokenAndSignature(h->req_buf+h->req_AuthOff, h->req_AuthLen,
-								h->req_buf+h->req_SigOff, h->req_SigLen,
-								h->req_buf+h->req_contentoff, h->req_contentlen, action))
-	{
-		ClearNameValueList(&data);
-		SoapError(h, 606, "Action not authorized");
-		return;
-	}
-#endif
-
 	leaseduration = leaseduration_str ? atoi(leaseduration_str) : 0;
 #ifdef IGD_V2
 	/* PortMappingLeaseDuration can be either a value between 1 and
@@ -592,6 +583,38 @@ AddPortMapping(struct upnphttp * h, const char * action, const char * ns)
 	 * instead (e.g. 604800 seconds) */
 	if(leaseduration == 0 || leaseduration > 604800)
 		leaseduration = 604800;
+#endif
+
+#ifdef USE_JWT_AUTH
+
+	struct Permission *perm = CreatePermissionObject();
+	if (-1 == VerifyAndExtractAuthToken(h->req_buf+h->req_AuthOff, h->req_AuthLen,
+								h->req_buf+h->req_SigOff, h->req_SigLen,
+								h->req_buf+h->req_contentoff, h->req_contentlen
+								, perm))
+	{
+		DestroyPermissionObject(perm);
+		ClearNameValueList(&data);
+		SoapError(h, 606, "Action not authorized");
+		return;
+	}
+
+	uint32_t int_ip_addr;
+	if (!ParseIpAddress(int_ip, &int_ip_addr)) {
+		DestroyPermissionObject(perm);
+		ClearNameValueList(&data);
+		SoapError(h, 402, "Invalid Args");
+		return;
+	}
+
+	if (1 != VeridyAddPortMappingAuth(perm, int_ip_addr, eport)) {
+		DestroyPermissionObject(perm);
+		ClearNameValueList(&data);
+		SoapError(h, 606, "Action not authorized");
+		return;
+	}
+
+	DestroyPermissionObject(perm);
 #endif
 
 	syslog(LOG_INFO, "%s: ext port %hu to %s:%hu protocol %s for: %s leaseduration=%u rhost=%s",
