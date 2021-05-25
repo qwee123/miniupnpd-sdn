@@ -3,6 +3,7 @@
 #include <syslog.h>
 #include <stdlib.h>
 #include "jwtauth.h"
+#include "jwtauthutils.h"
 
 int main(int argc, char ** argv) {
     openlog("Test App: ", LOG_PERROR, LOG_DAEMON);
@@ -30,7 +31,7 @@ int main(int argc, char ** argv) {
     char http_sig[] = "QOL74h5h0X6r1onnWfbMutUt+lLO/yPbhNmgwG5vWq7dbwBGub2x3a3Gt1Uyt7B7iB0M1NaPFz0YRl7Uva1FWJYyl4bGgfz7n1qLd+cTOEii+IEy9UlnjwVlLeB88FJx+FcgI88qXJaagks9qbIWxr3a0l5IFhPPOiipeneddez1IEtpIVb1XqMzeBRssvPYeFTIfZBcNxvOhX22VzMnYskyGJhJDprxZQd8MdbYB4V/RJ5/iZnDGiNBJZIYJzh9MpdnXrrKEQDnK9eHVYFKkmhLSUlbhBxQA97xmFlQXEvt1pPKaHnAAfNtH5wQDAG6ozghb+Lfh7nqC5IzFh7P8g==";
 
     struct Permission * perm = CreatePermissionObject();
-    printf("%d\n", VerifyAuthTokenAndSignature(testcase, strlen(testcase), http_sig, strlen(http_sig), content, strlen(content), perm));
+    printf("%d\n", VerifyAndExtractAuthToken(testcase, strlen(testcase), http_sig, strlen(http_sig), content, strlen(content), perm));
     for(unsigned int i = 0;i < perm->pub_port_range_len;i++) {
         printf("start: %d, end:%d\n", perm->pub_port_range[i].start, perm->pub_port_range[i].end);
     }

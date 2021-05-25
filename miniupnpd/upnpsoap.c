@@ -41,6 +41,8 @@
 
 #ifdef USE_JWT_AUTH
 #include "jwtauth.h"
+#include "jwtauthutils.h"
+#include "upnpsoapauth.h"
 #endif
 
 /* utility function */
@@ -586,10 +588,10 @@ AddPortMapping(struct upnphttp * h, const char * action, const char * ns)
 #ifdef USE_JWT_AUTH
 
 	struct Permission *perm = CreatePermissionObject();
-	if (-1 == VerifyAuthTokenAndSignature(h->req_buf+h->req_AuthOff, h->req_AuthLen,
+	if (-1 == VerifyAndExtractAuthToken(h->req_buf+h->req_AuthOff, h->req_AuthLen,
 								h->req_buf+h->req_SigOff, h->req_SigLen,
 								h->req_buf+h->req_contentoff, h->req_contentlen
-								, &perm))
+								, perm))
 	{
 		DestroyPermissionObject(perm);
 		ClearNameValueList(&data);
@@ -597,8 +599,22 @@ AddPortMapping(struct upnphttp * h, const char * action, const char * ns)
 		return;
 	}
 
-	DestroyPermissionObject(perm);
+	uint32_t int_ip_addr;
+	if (!ParseIpAddress(int_ip, &int_ip_addr)) {
+		DestroyPermissionObject(perm);
+		ClearNameValueList(&data);
+		SoapError(h, 402, "Invalid Args");
+		return;
+	}
 
+	if (1 != VeridyAddPortMappingAuth(perm, int_ip_addr, eport)) {
+		DestroyPermissionObject(perm);
+		ClearNameValueList(&data);
+		SoapError(h, 606, "Action not authorized");
+		return;
+	}
+
+	DestroyPermissionObject(perm);
 #endif
 
 	syslog(LOG_INFO, "%s: ext port %hu to %s:%hu protocol %s for: %s leaseduration=%u rhost=%s",

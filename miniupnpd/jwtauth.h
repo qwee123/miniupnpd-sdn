@@ -1,7 +1,7 @@
 #ifndef JWTAUTH_H
 #define JWTAUTH_H
 
-#include "upnphttp.h"
+#include "config.h"
 
 #ifdef USE_JWT_AUTH
 
@@ -21,9 +21,12 @@ struct Permission {
     struct IpRange * int_ip_range;
     unsigned int int_ip_range_len;
 };
+/*
+bool 
+ContainIp(struct IpRange range, uint32_t target);*/
 
 int
-VerifyAuthTokenAndSignature(const char* auth, int auth_len,
+VerifyAndExtractAuthToken(const char* auth, int auth_len,
                 const char* sig, int sig_len,
                 const char* http_content, int http_content_len,
                 struct Permission * perm);

@@ -9,13 +9,12 @@
 #include <string.h>
 
 #include "jwtauth.h"
+#include "jwtauthutils.h"
 #include "upnphttp.h"
 #include "json/json_tokener.h"
 
 // 5+1+5, 5 means the max number of digits of an unsigned int, then plus '-'.
 #define MAX_PORTRANGE_STR_LEN 11
-// 3*4(address) + 3(dot) + 1(slash) + 2(mask)
-#define MAX_IPRANGE_STR_LEN 18
 
 static int
 decodeBase64(unsigned char** out, size_t* out_len, const char* b64str, size_t b64str_len);
@@ -36,9 +35,6 @@ retrievePortRangeFromJsonObj(struct json_object *jobj, const char *key,
                     struct PortRange ** ret, unsigned int * ret_size);
 
 static bool
-extractIpRange(char * range_str, uint32_t *address, uint32_t *mask);
-
-static bool
 retrieveIpRangeFromJsonObj(struct json_object *jobj, const char *key,
                     struct IpRange ** ret, unsigned int * ret_size);
 
@@ -52,7 +48,7 @@ retrieveJsonArrayFromJsonObj(struct json_object *jobj, const char *key, struct j
 @param http_sig represents the value of the "Signature" header, the signature of the "http request payload".
 @variable sig represents the signature of the jwttoken, signed by trusted third-party.
 */
-int VerifyAuthTokenAndSignature(const char* auth, int auth_len,
+int VerifyAndExtractAuthToken(const char* auth, int auth_len,
                 const char* http_sigb64, int http_sigb64_len, 
                 const char* http_content, int http_content_len,
                 struct Permission * out_perm) {
@@ -387,62 +383,6 @@ retrievePortRangeFromJsonObj(struct json_object *jobj, const char *key, struct P
 	return true;
 }
 
-static char * delim_dot = ".\0";
-static char * delim_slash = "/\0";
-
-static bool
-extractIpRange(char * range_str, uint32_t *address, uint32_t *mask) {
-    char * first, * second, * third, * fourth; //four segments of an address
-    char * addr_seg, * mask_seg;
-    *address = 0;
-    *mask = 0;
-
-    addr_seg = strtok(range_str, delim_slash);
-    mask_seg = strtok(NULL, delim_slash);
-    if (addr_seg == NULL || mask_seg == NULL) {
-        return false;
-    }
-
-    first = strtok(addr_seg, delim_dot);
-    second = strtok(NULL, delim_dot);
-    third = strtok(NULL, delim_dot);
-    fourth = strtok(NULL, delim_dot);
-    if (first == NULL || second == NULL || third == NULL || fourth == NULL) {
-        return false;
-    }
-
-    int tmp = atoi(first);
-    if (tmp > 256 || tmp < 0 || (tmp == 0 && (strlen(first) != 1 || first[0] != '0'))) {
-       return false;
-    }
-    *address += tmp << 24;
-
-    tmp = atoi(second);
-    if (tmp > 256 || tmp < 0 || (tmp == 0 && (strlen(second) != 1 || second[0] != '0'))) {
-       return false;
-    }
-    *address += tmp << 16;
-
-    tmp = atoi(third);
-    if (tmp > 256 || tmp < 0 || (tmp == 0 && (strlen(third) != 1 || third[0] != '0'))) {
-       return false;
-    }
-    *address += tmp << 8;
-
-    tmp = atoi(fourth);
-    if (tmp > 256 || tmp < 0 || (tmp == 0 && (strlen(fourth) != 1 || fourth[0] != '0'))) {
-       return false;
-    }
-    *address += tmp;
-
-    tmp = atoi(mask_seg);
-    if (tmp > 32 || tmp < 0 || (tmp == 0 && (strlen(mask_seg) != 1 || mask_seg[0] != '0'))) {
-        return false;
-    }
-    *mask = tmp;
-    return true;
-}
-
 static bool
 retrieveIpRangeFromJsonObj(struct json_object *jobj, const char *key, struct IpRange ** ret, unsigned int * ret_size) {
     struct json_object *tmp;
@@ -476,7 +416,7 @@ retrieveIpRangeFromJsonObj(struct json_object *jobj, const char *key, struct IpR
         strncpy(iprange_copy, json_object_get_string(entry), iprange_copy_len);
         iprange_copy[iprange_copy_len] = '\0';
         uint32_t address, mask;
-        if (!extractIpRange(iprange_copy, &address, &mask)) {
+        if (!ParseIpMaskString(iprange_copy, &address, &mask)) {
             syslog(LOG_ERR, "Provided iprange has invalid format. [%s]\n", json_object_get_string(entry));
             break;
         }
