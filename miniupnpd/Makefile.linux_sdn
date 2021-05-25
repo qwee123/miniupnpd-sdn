@@ -58,7 +58,7 @@ include $(SRCDIR)/objects.mk
 # sources in netfilter/ directory
 #NETFILTEROBJS = iptcrdr.o iptpinhole.o nfct_get.o
 JSONLIB = $(JSONBUILDPATH)/libjson-c.a
-SDNOBJS = iptcrdr.o iptpinhole.o nfct_get.o onosclient.o mongoose.o
+SDNOBJS = iptcrdr.o onosclient.o mongoose.o
 
 ALLOBJS = $(BASEOBJS) $(LNXSDNOBJS) $(SDNOBJS)
 
