@@ -14,8 +14,8 @@ def VerifyPassword(passhash, plaintext):
 
 token_template = """
 {
-    \"pub_port_range\": \"$pub_port_range\",
-    \"int_ip_range\": \"$int_ip_range\",
+    \"pub_port_range\": $pub_port_range,
+    \"int_ip_range\": $int_ip_range,
     \"public_key\": \"$pub_key\"
 }
 """

@@ -9,6 +9,8 @@
 #ifndef IPTCRDR_H_INCLUDED
 #define IPTCRDR_H_INCLUDED
 
+#include <netinet/in.h> 
+
 #include "../commonrdr.h"
 #include "../config.h"
 
