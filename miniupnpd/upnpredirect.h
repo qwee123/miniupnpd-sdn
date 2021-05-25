@@ -16,6 +16,7 @@
 
 #ifdef USE_SDN
 #include <stdbool.h>
+#include "portutils.h"
 #endif
 
 #ifdef ENABLE_LEASEFILE
@@ -37,9 +38,10 @@ int
 upnp_redirect(const char * rhost, unsigned short eport,
               const char * iaddr, unsigned short iport,
               const char * protocol, const char * desc,
-              unsigned int leaseduration
+              unsigned int leaseduration,
 #ifdef USE_SDN
-			  , bool automode, unsigned short * ret_eport
+              const struct PortRange * allowed_rdr_ports, unsigned int allowed_rdr_ports_len,
+			  unsigned short * ret_eport
 #endif
             );
 
@@ -53,9 +55,10 @@ upnp_redirect_internal(const char * rhost, unsigned short eport,
 #else
                        int proto,
 #endif 
-                        const char * desc,
+                       const char * desc,
 #ifdef USE_SDN
-					   unsigned int leaseduration, bool automode,
+					   unsigned int leaseduration, 
+				       const struct PortRange * allowed_rdr_ports, unsigned int allowed_rdr_ports_len,
                        unsigned short * ret_eport
 #else
                        unsigned int timestamp

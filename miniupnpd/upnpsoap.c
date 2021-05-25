@@ -623,7 +623,7 @@ AddPortMapping(struct upnphttp * h, const char * action, const char * ns)
 
 #ifdef USE_SDN
 	unsigned short ret_eport = 0; // not used in normal addportmapping
-	r = upnp_redirect(r_host, eport, int_ip, iport, protocol, desc, leaseduration, false, &ret_eport);
+	r = upnp_redirect(r_host, eport, int_ip, iport, protocol, desc, leaseduration, NULL, 0,&ret_eport);
 #else
 	r = upnp_redirect(r_host, eport, int_ip, iport, protocol, desc, leaseduration);
 #endif
@@ -696,6 +696,8 @@ AddAnyPortMapping(struct upnphttp * h, const char * action, const char * ns)
 	const char * leaseduration_str;
 	unsigned int leaseduration;
 #ifdef USE_SDN
+	struct PortRange *allowed_rdr_ports;
+	unsigned int allowed_rdr_ports_len;
 	unsigned short ret_eport = 0;
 #endif
 
@@ -778,7 +780,8 @@ AddAnyPortMapping(struct upnphttp * h, const char * action, const char * ns)
 			return;
 		}
 	}
-
+	
+#ifndef USE_JWT_AUTH
 	/* check if NewInternalAddress is the client address */
 	if(GETFLAG(SECUREMODEMASK))
 	{
@@ -791,9 +794,52 @@ AddAnyPortMapping(struct upnphttp * h, const char * action, const char * ns)
 			return;
 		}
 	}
+#ifdef USE_SDN
+	allowed_rdr_ports = malloc(sizeof(struct PortRange));
+	allowed_rdr_ports->start = 1024;
+	allowed_rdr_ports->end = 65535;
+	allowed_rdr_ports_len = 1;
+#endif
+#else
+	struct Permission *perm = CreatePermissionObject();
+	if (-1 == VerifyAndExtractAuthToken(h->req_buf+h->req_AuthOff, h->req_AuthLen,
+								h->req_buf+h->req_SigOff, h->req_SigLen,
+								h->req_buf+h->req_contentoff, h->req_contentlen
+								, perm))
+	{
+		DestroyPermissionObject(perm);
+		ClearNameValueList(&data);
+		SoapError(h, 606, "Action not authorized");
+		return;
+	}
+
+	uint32_t int_ip_addr;
+	if (!ParseIpAddress(int_ip, &int_ip_addr)) {
+		DestroyPermissionObject(perm);
+		ClearNameValueList(&data);
+		SoapError(h, 402, "Invalid Args");
+		return;
+	}
+
+	if (1 != VeridyAddPortMappingAuth(perm, int_ip_addr, eport)) {
+		DestroyPermissionObject(perm);
+		ClearNameValueList(&data);
+		SoapError(h, 606, "Action not authorized");
+		return;
+	}
 
 #ifdef USE_SDN
-	r = upnp_redirect(r_host, eport, int_ip, iport, protocol, desc, leaseduration, true, &ret_eport);
+	allowed_rdr_ports = calloc(perm->pub_port_range_len, sizeof(struct PortRange));
+	allowed_rdr_ports_len = perm->pub_port_range_len;
+	memcpy(allowed_rdr_ports, perm->pub_port_range, allowed_rdr_ports_len*sizeof(struct PortRange));
+#endif
+
+	DestroyPermissionObject(perm);
+#endif
+
+#ifdef USE_SDN
+	r = upnp_redirect(r_host, eport, int_ip, iport, protocol, desc, leaseduration,
+									allowed_rdr_ports, allowed_rdr_ports_len, &ret_eport);
 #else
 	r = upnp_redirect(r_host, eport, int_ip, iport, protocol, desc, leaseduration);
 	/* first try the port asked in request, then

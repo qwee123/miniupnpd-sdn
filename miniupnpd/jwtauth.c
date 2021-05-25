@@ -10,6 +10,7 @@
 
 #include "jwtauth.h"
 #include "jwtauthutils.h"
+#include "portutils.h"
 #include "upnphttp.h"
 #include "json/json_tokener.h"
 

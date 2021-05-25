@@ -51,7 +51,7 @@ _parseIpAddress(char * address_str, uint32_t *address) {
 }
 
 bool
-ParseIpAddress(char * address_str, uint32_t *address) {
+ParseIpAddress(const char * address_str, uint32_t *address) {
     
     int addr_len = strlen(address_str);
     if (addr_len > MAX_IP_STR_LEN) {

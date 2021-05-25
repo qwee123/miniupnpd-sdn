@@ -10,7 +10,7 @@
 #define MAX_IPRANGE_STR_LEN (MAX_IP_STR_LEN + 3)
 
 bool
-ParseIpAddress(char * address_str, uint32_t *address);
+ParseIpAddress(const char * address_str, uint32_t *address);
 
 bool
 ParseIpMaskString(char * range_str, uint32_t *address, uint32_t *mask);

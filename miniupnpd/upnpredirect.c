@@ -30,6 +30,7 @@
 #if defined(USE_SDN)
 #include <stdbool.h>
 #include "sdn/iptcrdr.h"
+#include "portutils.h"
 #endif
 #if defined(USE_NETFILTER)
 #include "netfilter/iptcrdr.h"
@@ -340,9 +341,10 @@ int
 upnp_redirect(const char * rhost, unsigned short eport,
               const char * iaddr, unsigned short iport,
               const char * protocol, const char * desc,
-              unsigned int leaseduration
+              unsigned int leaseduration,
 #ifdef USE_SDN
-			  , bool automode, unsigned short * ret_eport
+			  const struct PortRange * allowed_rdr_ports, unsigned int allowed_rdr_ports_len,
+			  unsigned short * ret_eport
 #endif
 			  )
 {
@@ -411,7 +413,8 @@ upnp_redirect(const char * rhost, unsigned short eport,
 	 * If action is valid, return 0, otherwise return 1.
 	*/
 	return upnp_redirect_internal(rhost, eport, iaddr, iport, proto,
-								desc, leaseduration, automode, ret_eport);
+								desc, leaseduration, allowed_rdr_ports, allowed_rdr_ports_len,
+								ret_eport);
 #else
 	/* Only match proto & eport
 	* Return 0 if any existing identical rule is found.
@@ -489,7 +492,8 @@ upnp_redirect_internal(const char * rhost, unsigned short eport,
 #endif
 					   const char * desc,
 #ifdef USE_SDN
-					   unsigned int leaseduration, bool automode,
+					   unsigned int leaseduration, 
+				       const struct PortRange * allowed_rdr_ports, unsigned int allowed_rdr_ports_len,
 					   unsigned short * ret_eport
 #else
                        unsigned int timestamp
@@ -503,9 +507,11 @@ upnp_redirect_internal(const char * rhost, unsigned short eport,
 		return -1;
 
 #ifdef USE_SDN
-	if (automode) {
+	if (allowed_rdr_ports != NULL) {
 		r = add_any_redirect_and_filter_rules(rhost, eport, iaddr, iport,
-								 proto, desc, leaseduration, ret_eport);
+								 proto, desc, leaseduration,
+				      			 allowed_rdr_ports, allowed_rdr_ports_len,
+								 ret_eport);
 	} else {
 		r = add_redirect_and_filter_rules(rhost, eport, iaddr, iport,
 								 proto, desc, leaseduration);

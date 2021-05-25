@@ -5,10 +5,7 @@
 
 #ifdef USE_JWT_AUTH
 
-struct PortRange {
-    unsigned short start;
-    unsigned short end;
-};
+#include "portutils.h"
 
 struct IpRange {
     uint32_t address;
