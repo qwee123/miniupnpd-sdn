@@ -44,12 +44,12 @@ if __name__ == "__main__":
     service = device['WANIPConn1']
     service2 = device['WANCommonIFC1']
 
-    print("AddPortMapping: ", service.AddPortMapping(
+    print("AddAnyPortMapping: ", service.AddAnyPortMapping(
         NewRemoteHost="*",
         NewExternalPort=55555,
         NewProtocol="tcp",
         NewInternalPort=60000,
-        NewInternalClient="172.30.2.1",
+        NewInternalClient="172.30.2.129",
         NewEnabled=True,
         NewPortMappingDescription="",
         NewLeaseDuration=10000,
