@@ -16,4 +16,4 @@ CREATE TABLE IF NOT EXISTS igdPermission (
 
 INSERT INTO users (username, password) VALUES ('user1', '$argon2id$v=19$m=102400,t=2,p=8$wPlCNl16IBJEi06WY6D8Ag$W7S0Qqy1eD0RtHQ43oVm/w');
 INSERT INTO igdPermission (user_id, permission) VALUES ((SELECT id from users where username = 'user1'), \
-      '{"pub_port_range": ["1024-2000", "30000-60000"], "int_ip_range": ["172.16.0.0/24", "172.30.2.128/25"]}');
+      '{"pub_port_range": ["1024-1030", "30000-30002"], "int_ip_range": ["172.16.0.0/24", "172.30.2.128/25"]}');

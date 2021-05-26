@@ -344,11 +344,10 @@ _add_redirect_and_filter_rules(const char * rhost, unsigned short eport,
 			return -1;
 		}
 	}
-	printf("jobj from str:\n---\n%s\n---\n", json_object_to_json_string_ext(jobj, JSON_C_TO_STRING_SPACED | JSON_C_TO_STRING_PRETTY));
 
 	struct conn_runtime_vars data = { 
 		.request = jobj,
-		.done = false 
+		.done = false
 	};
 	//printf("jobj from str:\n---\n%s\n---\n", json_object_to_json_string_ext(data.request, JSON_C_TO_STRING_SPACED | JSON_C_TO_STRING_PRETTY));
 	mg_http_connect(&mgr, controller_address, OnosAddIGDPortMapping, &data);
