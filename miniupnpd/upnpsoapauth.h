@@ -10,6 +10,7 @@
 
 int VeridyAddPortMappingAuth(struct Permission *perm, uint32_t int_ip_addr, unsigned short eport);
 
+int VeridyAddAnyPortMappingAuth(struct Permission *perm, uint32_t int_ip_addr, unsigned short eport);
 
 #endif
 #endif

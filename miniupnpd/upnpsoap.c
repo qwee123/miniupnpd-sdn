@@ -736,10 +736,12 @@ AddAnyPortMapping(struct upnphttp * h, const char * action, const char * ns)
 
 	// eport = (0 == strcmp(ext_port, "*")) ? 0 : (unsigned short)atoi(ext_port);
 	eport = (unsigned short)atoi(ext_port); //ext_port is guaranteed to be either numeric or '*' here.
+#ifndef USE_JWT_AUTH
 	if (eport == 0) {
 		eport = 1024 + ((random() & 0x7ffffffL) % (65536-1024));
 		//is there a missing 'f' inside "0x7ffffffL"? Anyway, seems not affecting the functionality here. By Ben.
 	}
+#endif
 
 #ifdef USE_SDN
 	if (!r_host) {
@@ -821,11 +823,15 @@ AddAnyPortMapping(struct upnphttp * h, const char * action, const char * ns)
 		return;
 	}
 
-	if (1 != VeridyAddPortMappingAuth(perm, int_ip_addr, eport)) {
+	if (1 != VeridyAddAnyPortMappingAuth(perm, int_ip_addr, eport)) {
 		DestroyPermissionObject(perm);
 		ClearNameValueList(&data);
 		SoapError(h, 606, "Action not authorized");
 		return;
+	}
+
+	if (eport == 0) {
+		eport = perm->pub_port_range[0].start;
 	}
 
 #ifdef USE_SDN
