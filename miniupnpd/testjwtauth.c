@@ -4,8 +4,10 @@
 #include <stdlib.h>
 #include "jwtauth.h"
 #include "jwtauthutils.h"
+#include "config.h"
 
 int main(int argc, char ** argv) {
+#ifdef USE_JWT_AUTH
     openlog("Test App: ", LOG_PERROR, LOG_DAEMON);
     char header[] = "eyAgICAiYWxnIjogIlJTMjU2IiAgICAgfQ==";
     int header_len = strlen(header);
@@ -49,4 +51,5 @@ int main(int argc, char ** argv) {
     free(testcase);
     closelog();
     return 0;
+#endif
 }
