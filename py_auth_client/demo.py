@@ -6,4 +6,4 @@ app = Flask(__name__)
 def home():
     return "This is a test server for upnpd-igd sdn project.\n"
 
-app.run(host = "0.0.0.0", port = 2000)
+app.run(host = "0.0.0.0", port = 60000)

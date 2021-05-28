@@ -341,9 +341,9 @@ int
 upnp_redirect(const char * rhost, unsigned short eport,
               const char * iaddr, unsigned short iport,
               const char * protocol, const char * desc,
-              unsigned int leaseduration,
+              unsigned int leaseduration
 #ifdef USE_SDN
-			  const struct PortRange * allowed_rdr_ports, unsigned int allowed_rdr_ports_len,
+			  ,const struct PortRange * allowed_rdr_ports, unsigned int allowed_rdr_ports_len,
 			  unsigned short * ret_eport
 #endif
 			  )

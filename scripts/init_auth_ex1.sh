@@ -64,35 +64,33 @@ fi
 docker run --name auth_db -e MARIADB_ROOT_PASSWORD=${auth_db_root_pass} --network ${auth_database_network} -td mariadb
 auth_db_address=$(docker inspect auth_db -f '{{ .NetworkSettings.Networks.'${auth_database_network}'.IPAddress }}')
 
-docker run -itd --name miniupnpd-sdn --cap-add NET_ADMIN --cap-add NET_BROADCAST \
+container_name=miniupnpd-sdn-linux
+miniupnpd_addr=172.16.0.100
+docker run -itd --name ${container_name} --cap-add NET_ADMIN --cap-add NET_BROADCAST \
+	--network none miniupnpd-sdn:linux
+ovs-docker add-port ovs-s3 eth0 ${container_name} --ipaddress=${miniupnpd_addr}/24
+
+container_name=miniupnpd-sdn-sdnauth
+miniupnpd_addr=172.16.0.101
+docker run -itd --name ${container_name} --cap-add NET_ADMIN --cap-add NET_BROADCAST \
 	-e CONTROLLER_ADDRESS=${controller_address}":"${controller_igd_app_port} \
-	--network ${onos_nfv_network} miniupnpd-sdn:${miniupnpd_version}
-ovs-docker add-port ovs-s3 eth1 miniupnpd-sdn --ipaddress=${miniupnpd_addr}/24
-iface_num=$(docker exec miniupnpd-sdn ip addr show | sed -n 's/\([0-9]*\): \(eth1@\).*/\1/p')
-iface=$(ip addr show | sed -n 's/\([0-9]*\): \([a-z0-9]*_l\)@if'${iface_num}'.*/\2/p')
-echo "Interface s3-miniupnpd: "${iface}
+	--network ${onos_nfv_network} miniupnpd-sdn:sdn-auth
+ovs-docker add-port ovs-s3 eth1 ${container_name} --ipaddress=${miniupnpd_addr}/24
+
+container_name=miniupnpd-sdn-sdn
+miniupnpd_addr=172.16.0.102
+docker run -itd --name ${container_name} --cap-add NET_ADMIN --cap-add NET_BROADCAST \
+	-e CONTROLLER_ADDRESS=${controller_address}":"${controller_igd_app_port} \
+	--network ${onos_nfv_network} miniupnpd-sdn:sdn
+ovs-docker add-port ovs-s3 eth1 ${container_name} --ipaddress=${miniupnpd_addr}/24
 
 clientname=
 for i in $(seq 1 2)
 do
 	clientname=client${i}
-	docker run -itd --name ${clientname} --net none --cap-add NET_ADMIN -e auth_server_address=${auth_server_addr}":"${auth_server_port} py_test_client
+	docker run -itd --name ${clientname} --net none --cap-add NET_ADMIN -e auth_server_address=${auth_server_addr}":"${auth_server_port} py_test_client:record
 	ovs-docker add-port ovs-s1 eth0 ${clientname} --ipaddress=172.16.0.$((i+1))/24
 	docker exec ${clientname} ip route add default via ${client_gateway}
-	iface_num=$(docker exec ${clientname} ip addr show | sed -n 's/\([0-9]*\): \(eth0@\).*/\1/p')
-    iface=$(ip addr show | sed -n 's/\([0-9]*\): \([a-z0-9]*_l\)@if'${iface_num}'.*/\2/p')
-    echo "Interface s1-"${clientname}": "${iface}
-done
-
-for i in $(seq 1 1)
-do
-	clientname=attacker${i}
-        docker run -itd --name ${clientname} --net none --cap-add NET_ADMIN py_test_attacker
-	ovs-docker add-port ovs-s2 eth0 ${clientname} --ipaddress=172.16.0.$((i+10))/24
-	docker exec ${clientname} ip route add default via ${client_gateway}
-	iface_num=$(docker exec ${clientname} ip addr show | sed -n 's/\([0-9]*\): \(eth0@\).*/\1/p')
-	iface=$(ip addr show | sed -n 's/\([0-9]*\): \([a-z0-9]*_l\)@if'${iface_num}'.*/\2/p')
-	echo "Interface s2-attacker: "${iface}
 done
 
 if [ "$1" == onos ]; then

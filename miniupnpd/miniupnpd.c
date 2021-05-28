@@ -2170,8 +2170,7 @@ main(int argc, char * * argv)
 	memset(&v, 0, sizeof(v));
 	if(init(argc, argv, &v) != 0)  /* 0 means success, 1 means error*/
 		return 1;
-	
-	printf("Controller Address: %s\n", controller_address);
+
 #ifdef ENABLE_HTTPS
 	if(init_ssl() < 0)
 		return 1;
