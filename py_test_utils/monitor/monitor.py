@@ -8,11 +8,15 @@ import sys
 import time
 import matplotlib.pyplot as plt
 import shutil
-
+import subprocess
+import string
 
 parser = argparse.ArgumentParser(description="Get simple receive/transmission" \
                                           " statistics from network interface.")
 parser.add_argument('--interface', '-i', action='append',
+                     help="Network interface for which to compute statistics." \
+                           " Can be specified multiple times.")
+parser.add_argument('--victim-interface', '-vi',
                      help="Network interface for which to compute statistics." \
                            " Can be specified multiple times.")
 parser.add_argument('--duration', '-d', default=60, type=int,
@@ -26,8 +30,9 @@ namespace = parser.parse_args()
 NET_DIR = "/sys/class/net"
 STAT_DIRS = list()
 INTERFACES = namespace.interface
-if not INTERFACES:
-    sys.exit("Please Specify at least one interface to be monitored.")
+VICTIM_INTERFACE = namespace.victim_interface
+if not INTERFACES or not VICTIM_INTERFACE:
+    sys.exit("Please Specify at least one interface to be monitored for traffic, and one victim interface for queue depth.")
 else:
     for i in INTERFACES:
         d = os.sep.join([NET_DIR, i, 'statistics'])
@@ -38,7 +43,6 @@ else:
 APP_DIR = namespace.output
 SAMPLING = namespace.duration    
 SAMPLING_INTERVAL = 0.5
-PLOT_TIMESTAMP = [t*SAMPLING_INTERVAL+SAMPLING_INTERVAL for t in range(2, int(SAMPLING*(1/SAMPLING_INTERVAL)), 1)]
 def main():
     try:
         initpath(APP_DIR)
@@ -50,6 +54,7 @@ def main():
             raise
 
     allstats = dict([(i, list()) for i in INTERFACES])
+    queuestats = []
 
     START_TIMESTAMP = time.time()
     END_TIMESTAMP = START_TIMESTAMP + SAMPLING
@@ -65,6 +70,11 @@ def main():
                 tx_bytes = int(f.read())
             allstats[interface].append((rx_bytes, tx_bytes))
 
+        #tc_res = subprocess.Popen(['tc', '-s', '-p', 'qdisc', 'ls', 'dev', VICTIM_INTERFACE], stdout=subprocess.PIPE, universal_newlines=True)
+        #queue_dep = subprocess.Popen(['sed', '-n', 's/ backlog \\([0-9]*[K]\?\\)b \\([0-9]*\\)p \\(.*\\)$/\\2/p'], stdin=tc_res.stdout, stdout=subprocess.PIPE, universal_newlines=True)
+        #out, err = queue_dep.communicate()
+        #queuestats.append(out)
+
         NEXT_TIMESTAMP = NEXT_TIMESTAMP + SAMPLING_INTERVAL
         while time.time() < NEXT_TIMESTAMP:
             time.sleep(0.1)
@@ -75,26 +85,50 @@ def main():
     for iface in INTERFACES:
         drawResult(iface, result[iface])
 
+    #post_queue_data = postProcessQueueLenData(queuestats)
+    #drawQueueLen(VICTIM_INTERFACE, post_queue_data)
+
+def postProcessQueueLenData(stats):
+    result = []
+    for data in stats:
+        try:
+            result.append(int(data[:-1]))
+        except ValueError:
+            print(data)
+            result.append(0)
+
+    return result
+
 def cal(stats):
     rx_rate = list()
     tx_rate = list()
-
-    for i in range(2, len(stats)):
+    SAMPLING_ENTRY_INTERVAL = (int)(1/SAMPLING_INTERVAL)
+    for i in range(SAMPLING_ENTRY_INTERVAL, len(stats)):
         rx_bytes = stats[i][0]
         tx_bytes = stats[i][1]
 
-        rx_rate.append((rx_bytes - stats[i-2][0])/1024)
-        tx_rate.append((tx_bytes - stats[i-2][1])/1024)
+        rx_rate.append((rx_bytes - stats[i-SAMPLING_ENTRY_INTERVAL][0])/1024)
+        tx_rate.append((tx_bytes - stats[i-SAMPLING_ENTRY_INTERVAL][1])/1024)
     
     return (rx_rate, tx_rate)
 
 def drawResult(iface, stats):
+    PLOT_TIMESTAMP=[i*SAMPLING_INTERVAL for i in range(len(stats[0]))]
     plt.figure(figsize=(15,10), dpi=100, linewidth=2)
     plt.plot(PLOT_TIMESTAMP, stats[0], color='r', label="RX_BYTES")
     plt.plot(PLOT_TIMESTAMP, stats[1], color='b', label="TX_BYTES")
     plt.xlabel('timestamp')
     plt.ylabel('KB/s')
+    plt.legend(loc='upper right')
     plt.savefig(os.sep.join([APP_DIR, iface]))
+
+def drawQueueLen(iface, stats):
+    PLOT_TIMESTAMP=[i*SAMPLING_INTERVAL for i in range(len(stats))]
+    plt.figure(figsize=(15,10), dpi=100, linewidth=2)
+    plt.bar(PLOT_TIMESTAMP, stats, width=0.45 , color='b', edgecolor='w')
+    plt.xlabel('timestamp')
+    plt.ylabel('packets')
+    plt.savefig(os.sep.join([APP_DIR, iface + '_queuelen']))
 
 
 def initpath(path):

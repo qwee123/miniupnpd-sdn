@@ -6,11 +6,12 @@ controller_port=
 controller_container_name=
 client_gateway=172.16.0.1
 miniupnpd_addr=172.16.0.100
-miniupnpd_version=v6
-vnf_num=1
+miniupnpd_version=v10
+vnf_num=5
 attacker_num=1
 client_num=2
 monitor_interfaces=
+victim_interface=
 
 if [ -z "$1" ]; then
 	echo "Please Specify an experiment situation, it's either 'pytest' or 'onos'"
@@ -64,7 +65,9 @@ for i in $(seq 1 ${vnf_num})
 do
 	vnfname=miniupnpd-sdn${i}
 	vnfip=172.16.0.$((i+100))
-	docker run -itd --name ${vnfname} --cap-add NET_ADMIN --cap-add NET_BROADCAST --network ${onos_nfv_network} miniupnpd-sdn:${miniupnpd_version}
+	docker run -itd --name ${vnfname} --cap-add NET_ADMIN --cap-add NET_BROADCAST \
+		--network ${onos_nfv_network} -e CONTROLLER_ADDRESS=${controller_address}":"${controller_igd_app_port} \
+		miniupnpd-sdn:${miniupnpd_version}
 	ovs-docker add-port ovs-s3 eth1 ${vnfname} --ipaddress=${vnfip}/24
 	iface_num=$(docker exec ${vnfname} ip addr show | sed -n 's/\([0-9]*\): \(eth1@\).*/\1/p')
 	iface=$(ip addr show | sed -n 's/\([0-9]*\): \([a-z0-9]*_l\)@if'${iface_num}'.*/\2/p')
