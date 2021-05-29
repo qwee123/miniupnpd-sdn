@@ -41,6 +41,8 @@
 
 #ifdef USE_JWT_AUTH
 #include "jwtauth.h"
+#include "jwtauthutils.h"
+#include "upnpsoapauth.h"
 #endif
 
 /* utility function */
@@ -569,17 +571,6 @@ AddPortMapping(struct upnphttp * h, const char * action, const char * ns)
 		return;
 	}
 
-#ifdef USE_JWT_AUTH
-	if (-1 == VerifyAuthTokenAndSignature(h->req_buf+h->req_AuthOff, h->req_AuthLen,
-								h->req_buf+h->req_SigOff, h->req_SigLen,
-								h->req_buf+h->req_contentoff, h->req_contentlen, action))
-	{
-		ClearNameValueList(&data);
-		SoapError(h, 606, "Action not authorized");
-		return;
-	}
-#endif
-
 	leaseduration = leaseduration_str ? atoi(leaseduration_str) : 0;
 #ifdef IGD_V2
 	/* PortMappingLeaseDuration can be either a value between 1 and
@@ -594,13 +585,45 @@ AddPortMapping(struct upnphttp * h, const char * action, const char * ns)
 		leaseduration = 604800;
 #endif
 
+#ifdef USE_JWT_AUTH
+
+	struct Permission *perm = CreatePermissionObject();
+	if (-1 == VerifyAndExtractAuthToken(h->req_buf+h->req_AuthOff, h->req_AuthLen,
+								h->req_buf+h->req_SigOff, h->req_SigLen,
+								h->req_buf+h->req_contentoff, h->req_contentlen
+								, perm))
+	{
+		DestroyPermissionObject(perm);
+		ClearNameValueList(&data);
+		SoapError(h, 606, "Action not authorized");
+		return;
+	}
+
+	uint32_t int_ip_addr;
+	if (!ParseIpAddress(int_ip, &int_ip_addr)) {
+		DestroyPermissionObject(perm);
+		ClearNameValueList(&data);
+		SoapError(h, 402, "Invalid Args");
+		return;
+	}
+
+	if (1 != VeridyAddPortMappingAuth(perm, int_ip_addr, eport)) {
+		DestroyPermissionObject(perm);
+		ClearNameValueList(&data);
+		SoapError(h, 606, "Action not authorized");
+		return;
+	}
+
+	DestroyPermissionObject(perm);
+#endif
+
 	syslog(LOG_INFO, "%s: ext port %hu to %s:%hu protocol %s for: %s leaseduration=%u rhost=%s",
 	       action, eport, int_ip, iport, protocol, desc, leaseduration,
 	       r_host ? r_host : "NULL");
 
 #ifdef USE_SDN
 	unsigned short ret_eport = 0; // not used in normal addportmapping
-	r = upnp_redirect(r_host, eport, int_ip, iport, protocol, desc, leaseduration, false, &ret_eport);
+	r = upnp_redirect(r_host, eport, int_ip, iport, protocol, desc, leaseduration, NULL, 0,&ret_eport);
 #else
 	r = upnp_redirect(r_host, eport, int_ip, iport, protocol, desc, leaseduration);
 #endif
@@ -673,6 +696,8 @@ AddAnyPortMapping(struct upnphttp * h, const char * action, const char * ns)
 	const char * leaseduration_str;
 	unsigned int leaseduration;
 #ifdef USE_SDN
+	struct PortRange *allowed_rdr_ports;
+	unsigned int allowed_rdr_ports_len;
 	unsigned short ret_eport = 0;
 #endif
 
@@ -711,10 +736,12 @@ AddAnyPortMapping(struct upnphttp * h, const char * action, const char * ns)
 
 	// eport = (0 == strcmp(ext_port, "*")) ? 0 : (unsigned short)atoi(ext_port);
 	eport = (unsigned short)atoi(ext_port); //ext_port is guaranteed to be either numeric or '*' here.
+#ifndef USE_JWT_AUTH
 	if (eport == 0) {
 		eport = 1024 + ((random() & 0x7ffffffL) % (65536-1024));
 		//is there a missing 'f' inside "0x7ffffffL"? Anyway, seems not affecting the functionality here. By Ben.
 	}
+#endif
 
 #ifdef USE_SDN
 	if (!r_host) {
@@ -755,7 +782,8 @@ AddAnyPortMapping(struct upnphttp * h, const char * action, const char * ns)
 			return;
 		}
 	}
-
+	
+#ifndef USE_JWT_AUTH
 	/* check if NewInternalAddress is the client address */
 	if(GETFLAG(SECUREMODEMASK))
 	{
@@ -768,9 +796,56 @@ AddAnyPortMapping(struct upnphttp * h, const char * action, const char * ns)
 			return;
 		}
 	}
+#ifdef USE_SDN
+	allowed_rdr_ports = malloc(sizeof(struct PortRange));
+	allowed_rdr_ports->start = 1024;
+	allowed_rdr_ports->end = 65535;
+	allowed_rdr_ports_len = 1;
+#endif
+#else
+	struct Permission *perm = CreatePermissionObject();
+	if (-1 == VerifyAndExtractAuthToken(h->req_buf+h->req_AuthOff, h->req_AuthLen,
+								h->req_buf+h->req_SigOff, h->req_SigLen,
+								h->req_buf+h->req_contentoff, h->req_contentlen
+								, perm))
+	{
+		DestroyPermissionObject(perm);
+		ClearNameValueList(&data);
+		SoapError(h, 606, "Action not authorized");
+		return;
+	}
+
+	uint32_t int_ip_addr;
+	if (!ParseIpAddress(int_ip, &int_ip_addr)) {
+		DestroyPermissionObject(perm);
+		ClearNameValueList(&data);
+		SoapError(h, 402, "Invalid Args");
+		return;
+	}
+
+	if (1 != VeridyAddAnyPortMappingAuth(perm, int_ip_addr, eport)) {
+		DestroyPermissionObject(perm);
+		ClearNameValueList(&data);
+		SoapError(h, 606, "Action not authorized");
+		return;
+	}
+
+	if (eport == 0) {
+		eport = perm->pub_port_range[0].start;
+	}
 
 #ifdef USE_SDN
-	r = upnp_redirect(r_host, eport, int_ip, iport, protocol, desc, leaseduration, true, &ret_eport);
+	allowed_rdr_ports = calloc(perm->pub_port_range_len, sizeof(struct PortRange));
+	allowed_rdr_ports_len = perm->pub_port_range_len;
+	memcpy(allowed_rdr_ports, perm->pub_port_range, allowed_rdr_ports_len*sizeof(struct PortRange));
+#endif
+
+	DestroyPermissionObject(perm);
+#endif
+
+#ifdef USE_SDN
+	r = upnp_redirect(r_host, eport, int_ip, iport, protocol, desc, leaseduration,
+									allowed_rdr_ports, allowed_rdr_ports_len, &ret_eport);
 #else
 	r = upnp_redirect(r_host, eport, int_ip, iport, protocol, desc, leaseduration);
 	/* first try the port asked in request, then

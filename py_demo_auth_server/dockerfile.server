@@ -1,0 +1,25 @@
+FROM python:3.6-buster
+
+RUN apt update && apt install -y net-tools iputils-ping vim tcpdump
+
+WORKDIR /app
+COPY ./*.py ./
+
+ENV FLASK_APP="demo_server.py"
+
+RUN python3 -m pip install pipreqs \
+    && pipreqs . \
+    && python3 -m pip install -r requirements.txt\
+    && python3 -m pip uninstall -y pipreqs
+
+#unsolved issue
+RUN python3 -m pip install argon2-cffi
+
+COPY ./*.pem ./ca_rs256.key ./password.txt ./
+
+#default db setting
+ENV db_addr="172.16.0.200"
+ENV db_port=3306
+ENV port=50000
+
+CMD flask run --cert ./cert.pem --key key.pem -p $port -h 0.0.0.0

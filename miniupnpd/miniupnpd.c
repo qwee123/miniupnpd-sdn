@@ -1154,6 +1154,7 @@ void complete_uuidvalues(void)
 
 /* init phase :
  * 1) read configuration file
+ * 1.5) read enviroment variable
  * 2) read command line arguments
  * 3) daemonize
  * 4) open syslog
@@ -1474,6 +1475,15 @@ init(int argc, char * * argv, struct runtime_vars * v)
 #endif
 	}
 #endif /* DISABLE_CONFIG_FILE */
+
+	/* Step (1.5) read environment variables ------------------------------------------------- */
+	/* In this part, I only implement the utility for the controller address for the experiment usage. */
+
+#ifdef USE_SDN
+	if (NULL != getenv("CONTROLLER_ADDRESS")) {
+		controller_address = getenv("CONTROLLER_ADDRESS");
+	}
+#endif
 
 	/* Step (2) read command line arguments---------------------------------------------------------- */
 
@@ -2160,6 +2170,7 @@ main(int argc, char * * argv)
 	memset(&v, 0, sizeof(v));
 	if(init(argc, argv, &v) != 0)  /* 0 means success, 1 means error*/
 		return 1;
+
 #ifdef ENABLE_HTTPS
 	if(init_ssl() < 0)
 		return 1;

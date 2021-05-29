@@ -27,7 +27,7 @@ if __name__ == "__main__":
         'password': auth_password,
         'pubkey': pub_key
     }
-    r = requests.post(comm_scheme+auth_server_addr+"/applyToken", data=user_cred, verify='./cert.pem')    
+    r = requests.post(comm_scheme+auth_server_addr+"/applyToken", data=user_cred, verify=False)    
     auth_token = r.text
 
     with open("rs256.key", "r") as f:
@@ -46,10 +46,10 @@ if __name__ == "__main__":
 
     print("AddAnyPortMapping: ", service.AddAnyPortMapping(
         NewRemoteHost="*",
-        NewExternalPort="*",
+        NewExternalPort=55555,
         NewProtocol="tcp",
         NewInternalPort=60000,
-        NewInternalClient="172.16.0.2",
+        NewInternalClient="172.30.2.129",
         NewEnabled=True,
         NewPortMappingDescription="",
         NewLeaseDuration=10000,

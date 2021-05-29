@@ -26,6 +26,7 @@
 #include "iptcrdr.h"
 #include "../upnpglobalvars.h"
 #include "../json/json_object.h"
+#include "../portutils.h"
 
 #define DEFAULT_PORTMAPPING_CAP 64
 #define ISVALID_USHORT(x) \
@@ -51,10 +52,7 @@ static const char * json_tag_rhost = "rhost";
 static const char * json_tag_iaddr = "iaddr";
 static const char * json_tag_iport = "iport";
 static const char * json_tag_duration = "duration";
-static const char * json_tag_auto = "autoselect"; // To distinquish AddAny and normal Add method
 static const char * json_tag_permit_port_range = "permit_port_range";
-static const char * json_tag_permit_port_range_max = "max";
-static const char * json_tag_permit_port_range_min = "min";
 static const char * json_tag_return_code = "return_code";
 /* deleted is a tag for deletePortmappings_in_range method */
 static const char * json_tag_deleted = "deleted";
@@ -309,7 +307,8 @@ static int
 _add_redirect_and_filter_rules(const char * rhost, unsigned short eport, 
 					const char * iaddr, unsigned short iport,
                     const char * proto, const char * desc,
-                    unsigned int duration, bool automode, 
+                    unsigned int duration,
+					const struct PortRange * allowed_rdr_ports, unsigned int allowed_rdr_ports_len,
 					unsigned short * final_eport)
 {
 	struct json_object *jobj = json_object_new_object();
@@ -319,30 +318,36 @@ _add_redirect_and_filter_rules(const char * rhost, unsigned short eport,
 	    || json_object_object_add(jobj, json_tag_proto, json_object_new_string(proto)) < 0
 		|| json_object_object_add(jobj, json_tag_iport, json_object_new_int(iport)) < 0
 		|| json_object_object_add(jobj, json_tag_iaddr, json_object_new_string(iaddr)) < 0
-		|| json_object_object_add(jobj, json_tag_duration, json_object_new_int(duration)) < 0
-		|| json_object_object_add(jobj, json_tag_auto, json_object_new_boolean(automode)) < 0)
+		|| json_object_object_add(jobj, json_tag_duration, json_object_new_int(duration)) < 0)
 	{
 		syslog(LOG_WARNING, "Fail to retrieve inputs of add_redirect_and_filter_rules method.");
 		return -1;
 	}
 	
-	// max_port_range and min_port_range use constants temporarily, should be fixed ASAP.
-	if (automode) {
-		struct json_object *permit_port_range = json_object_new_object();
-		if (json_object_object_add(permit_port_range, 
-				json_tag_permit_port_range_max, json_object_new_int(65535)) < 0
-			|| json_object_object_add(permit_port_range, 
-				json_tag_permit_port_range_min, json_object_new_int(1024)) < 0
-			|| json_object_object_add(jobj, json_tag_permit_port_range, permit_port_range) < 0)
-		{
-			syslog(LOG_WARNING, "Fail to retrieve permit_port_range of add_redirect_and_filter_rules method.");
+	// ex: permit_port_range : [[1024,2000],[(min),(max)],[30000,60000]], the order of values in each pair is crucial
+	if (allowed_rdr_ports != NULL) {
+		struct json_object *permit_port_ranges = json_object_new_array_ext(allowed_rdr_ports_len);
+		
+		for (unsigned int i = 0; i < allowed_rdr_ports_len;i++) {
+			struct json_object *port_range = json_object_new_array_ext(2);
+			if (json_object_array_add(port_range, json_object_new_int(allowed_rdr_ports[i].start)) < 0
+				|| json_object_array_add(port_range, json_object_new_int(allowed_rdr_ports[i].end)) < 0
+				|| json_object_array_add(permit_port_ranges, port_range) < 0)
+			{
+				syslog(LOG_WARNING, "Fail to retrieve permit_port_range of add_redirect_and_filter_rules method.");
+				return -1;		
+			}
+		}
+
+		if (json_object_object_add(jobj, json_tag_permit_port_range, permit_port_ranges) < 0) {
+			syslog(LOG_WARNING, "Fail to construct permit_port_range array of add_redirect_and_filter_rules method.");
 			return -1;
 		}
 	}
 
 	struct conn_runtime_vars data = { 
 		.request = jobj,
-		.done = false 
+		.done = false
 	};
 	//printf("jobj from str:\n---\n%s\n---\n", json_object_to_json_string_ext(data.request, JSON_C_TO_STRING_SPACED | JSON_C_TO_STRING_PRETTY));
 	mg_http_connect(&mgr, controller_address, OnosAddIGDPortMapping, &data);
@@ -350,7 +355,7 @@ _add_redirect_and_filter_rules(const char * rhost, unsigned short eport,
 	while(!data.done) mg_mgr_poll(&mgr, 1000);
 
 	if (data.response_code == CONFLICT_409) {
-		if (automode) {
+		if (allowed_rdr_ports != NULL) { //addAny
 			syslog(LOG_WARNING, "No available portmapping.");
 		} else {
 			syslog(LOG_WARNING, "Requested portmapping already exist.");
@@ -391,7 +396,7 @@ add_redirect_and_filter_rules(const char * rhost, unsigned short eport,
 {
 	unsigned short final_eport;
 	int ret_code = _add_redirect_and_filter_rules(rhost, eport, iaddr, 
-						iport, proto, desc, duration, false, &final_eport);
+						iport, proto, desc, duration, NULL, 0, &final_eport);
 	switch (ret_code) {
 		case 1:
 			syslog(LOG_WARNING, "Add rule succesfully but fail to retrieve portnumber from reponses of onos.");
@@ -411,11 +416,15 @@ int
 add_any_redirect_and_filter_rules(const char * rhost, unsigned short eport, 
 					const char * iaddr, unsigned short iport,
                     const char * proto, const char * desc,
-                    unsigned int duration, unsigned short * ret)
+                    unsigned int duration,
+					const struct PortRange * allowed_rdr_ports, unsigned int allowed_rdr_ports_len,
+					unsigned short * ret)
 {
 	unsigned short final_eport;
 	int ret_code = _add_redirect_and_filter_rules(rhost, eport, iaddr, 
-						iport, proto, desc, duration, true, &final_eport);
+						iport, proto, desc, duration, 
+						allowed_rdr_ports, allowed_rdr_ports_len,
+						&final_eport);
 	switch (ret_code) {
 		case 1:  // ActionFailed?
 			syslog(LOG_WARNING, "Add rule succesfully but fail to retrieve portnumber from reponses of onos.");

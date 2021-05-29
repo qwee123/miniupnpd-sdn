@@ -1,0 +1,6 @@
+__pycache__
+password.txt
+start_db.sh
+*.key
+*.key.pub
+*.pem

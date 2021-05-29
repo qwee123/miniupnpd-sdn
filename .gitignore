@@ -6,3 +6,4 @@ py_test_utils/share
 py_test_utils/pyvenv.cfg
 py_auth_client/__pycache__
 py_auth_client/*.key
+scripts/db_pass.txt

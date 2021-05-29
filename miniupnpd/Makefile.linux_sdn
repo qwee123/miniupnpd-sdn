@@ -58,7 +58,7 @@ include $(SRCDIR)/objects.mk
 # sources in netfilter/ directory
 #NETFILTEROBJS = iptcrdr.o iptpinhole.o nfct_get.o
 JSONLIB = $(JSONBUILDPATH)/libjson-c.a
-SDNOBJS = iptcrdr.o iptpinhole.o nfct_get.o onosclient.o mongoose.o
+SDNOBJS = iptcrdr.o onosclient.o mongoose.o
 
 ALLOBJS = $(BASEOBJS) $(LNXSDNOBJS) $(SDNOBJS)
 
@@ -170,7 +170,7 @@ testportinuse:	testportinuse.o portinuse.o getifaddr.o \
 testminissdp:	testminissdp.o minissdp.o upnputils.o upnpglobalvars.o \
 	asyncsendto.o getroute.o
 
-testjwtauth:	testjwtauth.o jwtauth.o $(JSONLIB)
+testjwtauth:	testjwtauth.o jwtauth.o jwtauthutils.o $(JSONLIB)
 
 miniupnpdctl:	miniupnpdctl.o
 

@@ -4,9 +4,9 @@ RUN apt update && apt install -y net-tools iputils-ping vim tcpdump
 RUN apt update && apt install -y iproute2 libssl1.0.0
 
 WORKDIR miniupnpd
-COPY miniupnpd/miniupnpd /bin
-COPY miniupnpd/miniupnpd.docker.conf miniupnpd.conf
-COPY miniupnpd/rs256.key.pub .
+COPY ./miniupnpd /bin
+COPY ./miniupnpd.docker.sdn.conf miniupnpd.conf
+COPY ./ca_rs256.key.pub .
 
 CMD /bin/bash
 #e.g. docker run -it --name miniupnpd --cap-add NET_ADMIN --cap-add NET_BROADCAST miniupnpd:v1

@@ -36,7 +36,6 @@ print("GetListOfPortMappings", service.GetListOfPortMappings(
     NewEndPort=60000,
     NewProtocol="tcp",
     NewManage=False,
-    NewNumberOfPorts=20,
-    cert="qweqwe"
+    NewNumberOfPorts=20
 ))
 

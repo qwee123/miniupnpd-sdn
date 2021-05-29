@@ -9,8 +9,11 @@
 #ifndef IPTCRDR_H_INCLUDED
 #define IPTCRDR_H_INCLUDED
 
-#include "../commonrdr.h"
+#include <netinet/in.h> 
+
 #include "../config.h"
+#include "../commonrdr.h"
+#include "../portutils.h"
 
 /* Explanation of the abv.
  * rhost: remoteHost, the (allowed) remote host(from wan) of the rule, usually is set to be a wildcard(an empty string)
@@ -40,7 +43,9 @@ int
 add_any_redirect_and_filter_rules(const char * rhost, unsigned short eport, 
 					const char * iaddr, unsigned short iport,
                     const char * proto, const char * desc,
-                    unsigned int duration, unsigned short * ret);
+                    unsigned int duration,
+                    const struct PortRange * allowed_rdr_ports, unsigned int allowed_rdr_ports_len,
+                    unsigned short * ret);
 
 int
 add_peer_redirect_rule2(const char * rhost, unsigned short rport,
