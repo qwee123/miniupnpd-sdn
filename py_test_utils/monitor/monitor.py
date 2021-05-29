@@ -31,9 +31,13 @@ NET_DIR = "/sys/class/net"
 STAT_DIRS = list()
 INTERFACES = namespace.interface
 VICTIM_INTERFACE = namespace.victim_interface
-if not INTERFACES or not VICTIM_INTERFACE:
-    sys.exit("Please Specify at least one interface to be monitored for traffic, and one victim interface for queue depth.")
+if not INTERFACES:
+    sys.exit("Please Specify at least one interface to be monitored.")
 else:
+    monitor_queue_enabled = True
+    if not VICTIM_INTERFACE:
+        monitor_queue_enabled = False;
+
     for i in INTERFACES:
         d = os.sep.join([NET_DIR, i, 'statistics'])
         if not os.path.exists(d):
@@ -70,14 +74,15 @@ def main():
                 tx_bytes = int(f.read())
             allstats[interface].append((rx_bytes, tx_bytes))
 
-        #tc_res = subprocess.Popen(['tc', '-s', '-p', 'qdisc', 'ls', 'dev', VICTIM_INTERFACE], stdout=subprocess.PIPE, universal_newlines=True)
-        #queue_dep = subprocess.Popen(['sed', '-n', 's/ backlog \\([0-9]*[K]\?\\)b \\([0-9]*\\)p \\(.*\\)$/\\2/p'], stdin=tc_res.stdout, stdout=subprocess.PIPE, universal_newlines=True)
-        #out, err = queue_dep.communicate()
-        #queuestats.append(out)
+        if monitor_queue_enabled:
+            tc_res = subprocess.Popen(['tc', '-s', '-p', 'qdisc', 'ls', 'dev', VICTIM_INTERFACE], stdout=subprocess.PIPE, universal_newlines=True)
+            queue_dep = subprocess.Popen(['sed', '-n', 's/ backlog \\([0-9]*[K]\?\\)b \\([0-9]*\\)p \\(.*\\)$/\\2/p'], stdin=tc_res.stdout, stdout=subprocess.PIPE, universal_newlines=True)
+            out, err = queue_dep.communicate()
+            queuestats.append(out)
 
         NEXT_TIMESTAMP = NEXT_TIMESTAMP + SAMPLING_INTERVAL
-        while time.time() < NEXT_TIMESTAMP:
-            time.sleep(0.1)
+        if time.time() < NEXT_TIMESTAMP:
+            time.sleep(NEXT_TIMESTAMP-time.time())
     
     result = dict([(i, (list(), list())) for i in INTERFACES])
     for iface in INTERFACES:
@@ -85,8 +90,9 @@ def main():
     for iface in INTERFACES:
         drawResult(iface, result[iface])
 
-    #post_queue_data = postProcessQueueLenData(queuestats)
-    #drawQueueLen(VICTIM_INTERFACE, post_queue_data)
+    if monitor_queue_enabled:
+        post_queue_data = postProcessQueueLenData(queuestats)
+        drawQueueLen(VICTIM_INTERFACE, post_queue_data)
 
 def postProcessQueueLenData(stats):
     result = []

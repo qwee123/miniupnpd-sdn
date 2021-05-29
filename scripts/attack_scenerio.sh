@@ -80,7 +80,7 @@ clientname=
 for i in $(seq 1 ${client_num})
 do
 	clientname=client${i}
-	docker run -itd --name ${clientname} --net none --cap-add NET_ADMIN py_test_client
+	docker run -itd --name ${clientname} --net none --cap-add NET_ADMIN py_test_client:record
 	ovs-docker add-port ovs-s1 eth0 ${clientname} --ipaddress=172.16.0.$((i+1))/24
 	docker exec ${clientname} ip route add default via ${client_gateway}
 	iface_num=$(docker exec ${clientname} ip addr show | sed -n 's/\([0-9]*\): \(eth0@\).*/\1/p')
