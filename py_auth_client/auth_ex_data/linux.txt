@@ -1,0 +1,108 @@
+Time to Prepare Request(ms):  2.650022506713867
+testcase: linux1
+auth: 0
+discover&get description: 2.1556613445281982
+soap: 0.005994319915771484
+SOAP Interval: 486
+Verification Interval: 0
+Total: 641
+
+------------------------------------
+
+Time to Prepare Request(ms):  1.5223026275634766
+testcase: linux2
+auth: 0
+discover&get description: 2.109952926635742
+soap: 0.005118370056152344
+SOAP Interval: 511
+Verification Interval: 0
+Total: 868
+
+------------------------------------
+
+Time to Prepare Request(ms):  1.5299320220947266
+testcase: linux3
+auth: 0
+discover&get description: 2.120969295501709
+soap: 0.005509138107299805
+SOAP Interval: 590
+Verification Interval: 0
+Total: 921
+
+------------------------------------
+
+Time to Prepare Request(ms):  1.4934539794921875
+testcase: linux4
+auth: 0
+discover&get description: 2.125856637954712
+soap: 0.005114078521728516
+SOAP Interval: 540
+Verification Interval: 0
+Total: 707
+
+------------------------------------
+
+Time to Prepare Request(ms):  1.4262199401855469
+testcase: linux5
+auth: 0
+discover&get description: 2.1041085720062256
+soap: 0.00495147705078125
+SOAP Interval: 599
+Verification Interval: 0
+Total: 986
+
+------------------------------------
+
+Time to Prepare Request(ms):  1.5037059783935547
+AddAnyPortMapping:  {'NewReservedPort': '15456'}
+testcase: linux6
+auth: 0
+discover&get description: 2.105238437652588
+soap: 0.005124330520629883
+SOAP Interval: 558
+Verification Interval: 0
+Total: 721
+
+------------------------------------
+
+Time to Prepare Request(ms):  1.5537738800048828
+testcase: linux7
+auth: 0
+discover&get description: 2.123006582260132
+soap: 0.005134105682373047
+SOAP Interval: 643
+Verification Interval: 0
+Total: 953
+
+------------------------------------
+
+Time to Prepare Request(ms):  1.5006065368652344
+testcase: linux8
+auth: 0
+discover&get description: 2.12147855758667
+soap: 0.005056858062744141
+SOAP Interval: 565
+Verification Interval: 0
+Total: 722
+
+------------------------------------
+
+Time to Prepare Request(ms):  1.4436244964599617
+testcase: linux9
+auth: 0
+discover&get description: 2.1176254749298096
+soap: 0.005213022232055664
+SOAP Interval: 690
+Verification Interval: 0
+Total: 1021
+
+------------------------------------
+
+Time to Prepare Request(ms):  1.5451908111572266
+testcase: linux10
+auth: 0
+discover&get description: 2.109344482421875
+soap: 0.0054111480712890625
+SOAP Interval: 594
+Verification Interval: 0
+Total: 1091

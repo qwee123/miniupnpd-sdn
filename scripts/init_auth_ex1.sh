@@ -67,21 +67,21 @@ auth_db_address=$(docker inspect auth_db -f '{{ .NetworkSettings.Networks.'${aut
 container_name=miniupnpd-sdn-linux
 miniupnpd_addr=172.16.0.100
 docker run -itd --name ${container_name} --cap-add NET_ADMIN --cap-add NET_BROADCAST \
-	--network none miniupnpd-sdn:linux
+	--network none miniupnpd-sdn:vTime-linux
 ovs-docker add-port ovs-s3 eth0 ${container_name} --ipaddress=${miniupnpd_addr}/24
 
 container_name=miniupnpd-sdn-sdnauth
 miniupnpd_addr=172.16.0.101
 docker run -itd --name ${container_name} --cap-add NET_ADMIN --cap-add NET_BROADCAST \
 	-e CONTROLLER_ADDRESS=${controller_address}":"${controller_igd_app_port} \
-	--network ${onos_nfv_network} miniupnpd-sdn:sdn-auth
+	--network ${onos_nfv_network} miniupnpd-sdn:vTime-auth
 ovs-docker add-port ovs-s3 eth1 ${container_name} --ipaddress=${miniupnpd_addr}/24
 
 container_name=miniupnpd-sdn-sdn
 miniupnpd_addr=172.16.0.102
 docker run -itd --name ${container_name} --cap-add NET_ADMIN --cap-add NET_BROADCAST \
 	-e CONTROLLER_ADDRESS=${controller_address}":"${controller_igd_app_port} \
-	--network ${onos_nfv_network} miniupnpd-sdn:sdn
+	--network ${onos_nfv_network} miniupnpd-sdn:vTime
 ovs-docker add-port ovs-s3 eth1 ${container_name} --ipaddress=${miniupnpd_addr}/24
 
 clientname=

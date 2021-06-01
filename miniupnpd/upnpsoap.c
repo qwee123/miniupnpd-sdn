@@ -19,6 +19,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <ctype.h>
+#include <sys/time.h>
 
 #include "macros.h"
 #include "config.h"
@@ -680,6 +681,8 @@ AddPortMapping(struct upnphttp * h, const char * action, const char * ns)
 static void
 AddAnyPortMapping(struct upnphttp * h, const char * action, const char * ns)
 {
+	struct timeval start;
+	gettimeofday(&start, NULL);
 	int r;
 	static const char resp[] =
 		"<u:%sResponse "
@@ -782,7 +785,7 @@ AddAnyPortMapping(struct upnphttp * h, const char * action, const char * ns)
 			return;
 		}
 	}
-	
+struct timeval before_ver, after_ver, before_action, after_action;	
 #ifndef USE_JWT_AUTH
 	/* check if NewInternalAddress is the client address */
 	if(GETFLAG(SECUREMODEMASK))
@@ -796,6 +799,7 @@ AddAnyPortMapping(struct upnphttp * h, const char * action, const char * ns)
 			return;
 		}
 	}
+
 #ifdef USE_SDN
 	allowed_rdr_ports = malloc(sizeof(struct PortRange));
 	allowed_rdr_ports->start = 1024;
@@ -803,6 +807,7 @@ AddAnyPortMapping(struct upnphttp * h, const char * action, const char * ns)
 	allowed_rdr_ports_len = 1;
 #endif
 #else
+	gettimeofday(&before_ver, NULL);
 	struct Permission *perm = CreatePermissionObject();
 	if (-1 == VerifyAndExtractAuthToken(h->req_buf+h->req_AuthOff, h->req_AuthLen,
 								h->req_buf+h->req_SigOff, h->req_SigLen,
@@ -814,6 +819,7 @@ AddAnyPortMapping(struct upnphttp * h, const char * action, const char * ns)
 		SoapError(h, 606, "Action not authorized");
 		return;
 	}
+	gettimeofday(&after_ver, NULL);
 
 	uint32_t int_ip_addr;
 	if (!ParseIpAddress(int_ip, &int_ip_addr)) {
@@ -844,9 +850,25 @@ AddAnyPortMapping(struct upnphttp * h, const char * action, const char * ns)
 #endif
 
 #ifdef USE_SDN
+	gettimeofday(&before_action, NULL);
 	r = upnp_redirect(r_host, eport, int_ip, iport, protocol, desc, leaseduration,
 									allowed_rdr_ports, allowed_rdr_ports_len, &ret_eport);
+	gettimeofday(&after_action, NULL);
+#ifdef USE_JWT_AUTH
+	printf("Verification: %ld %ld %ld %ld\n",
+		before_ver.tv_sec, before_ver.tv_usec, after_ver.tv_sec, after_ver.tv_usec);
+#endif
+	printf("SOAP: %ld %ld %ld %ld\n",
+		before_action.tv_sec, before_action.tv_usec, after_action.tv_sec, after_action.tv_usec);
+
+#ifdef USE_JWT_AUTH
+	printf("Verification Interval: %ld\n",
+		(after_ver.tv_sec-before_ver.tv_sec)*1000000 + (after_ver.tv_usec-before_ver.tv_usec));
+#endif
+	printf("SOAP Interval: %ld\n",
+		(after_action.tv_sec-before_action.tv_sec)*1000000 + (after_action.tv_usec-before_action.tv_usec));
 #else
+	gettimeofday(&before_action, NULL);
 	r = upnp_redirect(r_host, eport, int_ip, iport, protocol, desc, leaseduration);
 	/* first try the port asked in request, then
 	 * try +1, -1, +2, -2, etc. */
@@ -885,6 +907,10 @@ AddAnyPortMapping(struct upnphttp * h, const char * action, const char * ns)
 			 * continue */
 		}
 	}
+
+	gettimeofday(&after_action, NULL);
+	printf("SOAP Interval: %ld\n",
+		(after_action.tv_sec-before_action.tv_sec)*1000000 + (after_action.tv_usec-before_action.tv_usec));
 #endif
 	ClearNameValueList(&data);
 

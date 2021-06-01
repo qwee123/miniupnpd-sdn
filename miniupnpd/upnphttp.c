@@ -20,9 +20,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include "config.h"
-#ifdef ENABLE_HTTP_DATE
 #include <time.h>
-#endif
 #include "upnphttp.h"
 #include "upnpdescgen.h"
 #include "miniupnpdpath.h"

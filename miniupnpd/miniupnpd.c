@@ -2991,11 +2991,17 @@ main(int argc, char * * argv)
 		{
 			if(e->socket >= 0)
 			{
+				struct timeval start, end;
+				gettimeofday(&start, NULL);
 				if(FD_ISSET(e->socket, &readset) ||
 				   FD_ISSET(e->socket, &writeset))
 				{
 					Process_upnphttp(e); /*$qwe$*/
 				}
+				gettimeofday(&end, NULL);
+				printf("Total: %ld\n",
+					(end.tv_sec-start.tv_sec)*1000000+
+					(end.tv_usec-start.tv_usec));
 			}
 		}
 		/* process incoming HTTP connections */

@@ -12,7 +12,7 @@ import datetime
 
 OUT_DIR = "./"
 tries = 10
-url = 'http://172.17.0.3:40000/' #normal case
+url = 'http://127.0.0.1:40000/' #normal case
 #url = 'http://192.168.1.10:1024/' #sdn
 
 timestamps = []
