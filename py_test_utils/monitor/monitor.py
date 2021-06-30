@@ -120,7 +120,7 @@ def cal(stats):
 
 def drawResult(iface, stats):
     PLOT_TIMESTAMP=[i*SAMPLING_INTERVAL for i in range(len(stats[0]))]
-    plt.figure(figsize=(15,10), dpi=100, linewidth=2)
+    plt.figure(figsize=(15,10), dpi=200, linewidth=2)
     plt.plot(PLOT_TIMESTAMP, stats[0], color='r', label="RX_BYTES")
     plt.plot(PLOT_TIMESTAMP, stats[1], color='b', label="TX_BYTES")
     plt.xlabel('timestamp')
@@ -130,7 +130,7 @@ def drawResult(iface, stats):
 
 def drawQueueLen(iface, stats):
     PLOT_TIMESTAMP=[i*SAMPLING_INTERVAL for i in range(len(stats))]
-    plt.figure(figsize=(15,10), dpi=100, linewidth=2)
+    plt.figure(figsize=(15,10), dpi=200, linewidth=2)
     plt.bar(PLOT_TIMESTAMP, stats, width=0.45 , color='b', edgecolor='w')
     plt.xlabel('timestamp')
     plt.ylabel('packets')
