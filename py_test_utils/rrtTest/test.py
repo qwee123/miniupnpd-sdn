@@ -31,9 +31,10 @@ plot_timestamps = [t+1 for t in range(tries)]
 
 fig, ax1 = plt.subplots()
 ax1.bar(plot_timestamps, durations)
-ax1.set_title('Round-Trip-Time in normal nat')
+ax1.set_title('Request Lantency in Normal Connection')
 ax1.set_xlabel('xth connection attempts')
 ax1.set_ylabel('time(ms)')
+ax1.set_ylim([0, 10])
 ax1.set_xticks(plot_timestamps)
 
 # Create a set of inset Axes: these should fill the bounding box allocated to

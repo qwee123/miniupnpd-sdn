@@ -13,6 +13,7 @@ auth_server_addr=172.16.0.150
 auth_server_port=50000
 auth_db_address=
 auth_db_root_pass=$(cat db_pass.txt)
+wan2_ip=192.168.1.11/24
 
 if [ -z "$1" ]; then
 	echo "Please Specify an experiment situation, it's either 'pytest' or 'onos'"
@@ -102,6 +103,15 @@ if [ "$1" == onos ]; then
 	ovs-vsctl set-controller ovs-s3 tcp:${controller_address}:${controller_port}
     ovs-vsctl set-controller ovs-r1 tcp:${controller_address}:${controller_port}
 fi
+
+ip netns add demo
+ip link add name wan2 type veth peer name wan3
+ip link set wan2 netns demo
+ovs-vsctl add-port ovs-r1 wan3
+ip netns exec demo ip addr add ${wan2_ip} dev wan2
+ip netns exec demo ip link set wan2 up
+ip link set wan3 up
+sysctl -w net.ipv4.conf.wan3.forwarding=1
 
 #Disable stderr during testing database connectivity 
 exec 3>&2

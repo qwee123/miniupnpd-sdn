@@ -22,4 +22,4 @@ ENV db_addr="172.16.0.200"
 ENV db_port=3306
 ENV port=50000
 
-CMD flask run --cert ./cert.pem --key key.pem -p $port -h 0.0.0.0
+CMD flask run --cert ./cert.pem --key ./ca_rs256.key -p $port -h 0.0.0.0

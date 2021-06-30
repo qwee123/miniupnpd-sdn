@@ -30,3 +30,7 @@ ovs-vsctl del-controller ovs-r1
 
 docker stop auth_db auth_server onos py_test_server
 docker rm auth_db auth_server py_test_server
+
+ovs-vsctl del-port ovs-r1 wan3
+ip link delete wan3 type veth
+ip netns delete demo
