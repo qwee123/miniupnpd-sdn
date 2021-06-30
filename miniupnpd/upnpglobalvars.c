@@ -133,7 +133,7 @@ const char * minissdpdsocketpath = "/var/run/minissdpd.sock";
 
 #ifdef USE_SDN
 /* Address of the controller */
-const char * controller_address = "172.21.0.1:6653";
+const char * controller_address = "172.22.0.3:40000";
 #endif
 
 /* BOOTID.UPNP.ORG and CONFIGID.UPNP.ORG */

@@ -132,12 +132,20 @@ void retrieveJsonPayload(void *ev_data, struct conn_runtime_vars *data) {
     json_tokener_free(tokener);
 }
 
+static char remote_addr[MAX_REMOTE_ADDR_LEN];
 struct mg_str getHttpRemoteHostInfo(struct mg_connection *c) {
-    char remote_addr[MAX_REMOTE_ADDR_LEN];
+    for (int i = 0; i < MAX_REMOTE_ADDR_LEN;i++) {
+        remote_addr[i] = '\0';
+    }
 
-    snprintf(remote_addr, sizeof(remote_addr), "%u", ntohl(c->peer.ip));
-    remote_addr[MAX_REMOTE_ADDR_LEN-1] = '\0';
-    return mg_url_host(remote_addr);
+    uint32_t ip = ntohl(c->peer.ip);
+    uint32_t first = ip >> 24;
+    uint32_t second = (ip >> 16) & 0xff;
+    uint32_t third = (ip >> 8) & 0xff;
+    uint32_t fourth = ip & 0xff;
+
+    snprintf(remote_addr, sizeof(remote_addr), "%u.%u.%u.%u:%u", first, second, third, fourth, ntohs(c->peer.port));
+    return mg_str_n(remote_addr, strlen(remote_addr));
 }
 
 void OnosCheckAlive(struct mg_connection *c, int ev, void *ev_data, void *fn_data) {
@@ -338,7 +346,6 @@ void OnosGetIGDPortMapping(struct mg_connection *c, int ev, void *ev_data, void 
 
         struct mg_str host;
         struct http_options options;
-        
         host = getHttpRemoteHostInfo(c);
         
         options.req_url = uri_portmapping;

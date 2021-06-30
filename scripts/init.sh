@@ -13,6 +13,29 @@ auth_server_addr=172.16.0.150
 auth_server_port=50000
 auth_db_address=
 auth_db_root_pass=$(cat db_pass.txt)
+wan2_mac=c2:67:18:3d:bc:ca
+wan2_ip=192.168.1.11/24
+
+ConnectClient() {
+	client=$1
+	ovs=$2
+	client_ip=$3
+
+	docker run -itd --name ${client} --net none --cap-add NET_ADMIN -e auth_server_address=${auth_server_addr}":"${auth_server_port} py_test_client
+	ovs-docker add-port ${ovs} eth0 ${client} --ipaddress=${client_ip}
+	docker exec ${client} ip route add default via ${client_gateway}
+	PrintIfaceInfo ${client} eth0 ${ovs} 
+}
+
+PrintIfaceInfo() {
+	container=$1
+	ifacename=$2
+	ovs=$3
+
+	iface_num=$(docker exec ${container} ip addr show | sed -n 's/\([0-9]*\): \('${ifacename}'@\).*/\1/p')
+    iface=$(ip addr show | sed -n 's/\([0-9]*\): \([a-z0-9]*_l\)@if'${iface_num}'.*/\2/p')
+    echo "Interface "${ovs}"-"${container}": "${iface}
+}
 
 if [ -z "$1" ]; then
 	echo "Please Specify an experiment situation, it's either 'pytest' or 'onos'"
@@ -68,40 +91,35 @@ docker run -itd --name miniupnpd-sdn --cap-add NET_ADMIN --cap-add NET_BROADCAST
 	-e CONTROLLER_ADDRESS=${controller_address}":"${controller_igd_app_port} \
 	--network ${onos_nfv_network} miniupnpd-sdn:${miniupnpd_version}
 ovs-docker add-port ovs-s3 eth1 miniupnpd-sdn --ipaddress=${miniupnpd_addr}/24
-iface_num=$(docker exec miniupnpd-sdn ip addr show | sed -n 's/\([0-9]*\): \(eth1@\).*/\1/p')
-iface=$(ip addr show | sed -n 's/\([0-9]*\): \([a-z0-9]*_l\)@if'${iface_num}'.*/\2/p')
-echo "Interface s3-miniupnpd: "${iface}
+PrintIfaceInfo miniupnpd-sdn eth1 ovs-s3
 
-clientname=
-for i in $(seq 1 2)
-do
-	clientname=client${i}
-	docker run -itd --name ${clientname} --net none --cap-add NET_ADMIN -e auth_server_address=${auth_server_addr}":"${auth_server_port} py_test_client
-	ovs-docker add-port ovs-s1 eth0 ${clientname} --ipaddress=172.16.0.$((i+1))/24
-	docker exec ${clientname} ip route add default via ${client_gateway}
-	iface_num=$(docker exec ${clientname} ip addr show | sed -n 's/\([0-9]*\): \(eth0@\).*/\1/p')
-    iface=$(ip addr show | sed -n 's/\([0-9]*\): \([a-z0-9]*_l\)@if'${iface_num}'.*/\2/p')
-    echo "Interface s1-"${clientname}": "${iface}
-done
+ConnectClient client1 ovs-s11 172.16.0.2/24
+ConnectClient client2 ovs-s1 172.16.0.3/24
 
-for i in $(seq 1 1)
-do
-	clientname=attacker${i}
-        docker run -itd --name ${clientname} --net none --cap-add NET_ADMIN py_test_attacker
-	ovs-docker add-port ovs-s2 eth0 ${clientname} --ipaddress=172.16.0.$((i+10))/24
-	docker exec ${clientname} ip route add default via ${client_gateway}
-	iface_num=$(docker exec ${clientname} ip addr show | sed -n 's/\([0-9]*\): \(eth0@\).*/\1/p')
-	iface=$(ip addr show | sed -n 's/\([0-9]*\): \([a-z0-9]*_l\)@if'${iface_num}'.*/\2/p')
-	echo "Interface s2-attacker: "${iface}
-done
+clientname=attacker
+docker run -itd --name ${clientname} --net none --cap-add NET_ADMIN py_test_attacker
+ovs-docker add-port ovs-s2 eth0 ${clientname} --ipaddress=172.16.0.11/24
+docker exec ${clientname} ip route add default via ${client_gateway}
+PrintIfaceInfo ${clientname} eth0 ovs-s2
 
 if [ "$1" == onos ]; then
 	echo "set ovs-controller connection"
+	ovs-vsctl set-controller ovs-s11 tcp:${controller_address}:${controller_port}
 	ovs-vsctl set-controller ovs-s1 tcp:${controller_address}:${controller_port}
 	ovs-vsctl set-controller ovs-s2 tcp:${controller_address}:${controller_port}
 	ovs-vsctl set-controller ovs-s3 tcp:${controller_address}:${controller_port}
     ovs-vsctl set-controller ovs-r1 tcp:${controller_address}:${controller_port}
 fi
+
+ip netns add demo
+ip link add name wan2 type veth peer name wan3
+ip link set wan2 netns demo
+ovs-vsctl add-port ovs-r1 wan3
+ip netns exec demo ifconfig wan2 hw ether ${wan2_mac}
+ip netns exec demo ip addr add ${wan2_ip} dev wan2
+ip netns exec demo ip link set wan2 up
+ip link set wan3 up
+sysctl -w net.ipv4.conf.wan3.forwarding=1
 
 #Disable stderr during testing database connectivity 
 exec 3>&2

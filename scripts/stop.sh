@@ -18,11 +18,13 @@ client_list=$(docker ps -a --format {{.Names}} -f name='^client.*$')
 for client in ${client_list}
 do
     ovs-docker del-ports ovs-s1 ${client}
+    ovs-docker del-ports ovs-s11 ${client}
     docker stop ${client} && docker rm ${client}
 done
 
 ovs-docker del-ports ovs-s3 auth_server 
 
+ovs-vsctl del-controller ovs-s11
 ovs-vsctl del-controller ovs-s1
 ovs-vsctl del-controller ovs-s2
 ovs-vsctl del-controller ovs-s3
@@ -30,3 +32,7 @@ ovs-vsctl del-controller ovs-r1
 
 docker stop auth_db auth_server onos py_test_server
 docker rm auth_db auth_server py_test_server
+
+ovs-vsctl del-port ovs-r1 wan3
+ip link delete wan3 type veth
+ip netns delete demo
