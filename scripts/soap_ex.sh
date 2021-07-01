@@ -19,7 +19,7 @@ ConnectClient() {
 	ovs=$2
 	client_ip=$3
 
-	docker run -itd --name ${client} --net none --cap-add NET_ADMIN -e auth_server_address=${auth_server_addr}":"${auth_server_port} py_test_client
+	docker run -itd --name ${client} --net none --cap-add NET_ADMIN -e auth_server_address=${auth_server_addr}":"${auth_server_port} py_test_client:record
 	ovs-docker add-port ${ovs} eth0 ${client} --ipaddress=${client_ip}
 	docker exec ${client} ip route add default via ${client_gateway}
 	PrintIfaceInfo ${client} eth0 ${ovs} 
@@ -115,6 +115,16 @@ if [ "$1" == onos ]; then
 	ovs-vsctl set-controller ovs-s3 tcp:${controller_address}:${controller_port}
     ovs-vsctl set-controller ovs-r1 tcp:${controller_address}:${controller_port}
 fi
+
+ip netns add demo
+ip link add name wan2 type veth peer name wan3
+ip link set wan2 netns demo
+ovs-vsctl add-port ovs-r1 wan3
+ip netns exec demo ifconfig wan2 hw ether ${wan2_mac}
+ip netns exec demo ip addr add ${wan2_ip} dev wan2
+ip netns exec demo ip link set wan2 up
+ip link set wan3 up
+sysctl -w net.ipv4.conf.wan3.forwarding=1
 
 #Disable stderr during testing database connectivity 
 exec 3>&2
