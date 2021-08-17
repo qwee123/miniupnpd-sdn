@@ -13,6 +13,28 @@ client_num=2
 monitor_interfaces=
 victim_interface=
 
+ConnectClient() {
+	client=$1
+	ovs=$2
+	client_ip=$3
+
+	docker run -itd --name ${client} --net none --cap-add NET_ADMIN -e auth_server_address=${auth_server_addr}":"${auth_server_port} py_test_client
+	ovs-docker add-port ${ovs} eth0 ${client} --ipaddress=${client_ip}
+	docker exec ${client} ip route add default via ${client_gateway}
+	PrintIfaceInfo ${client} eth0 ${ovs} 
+}
+
+PrintIfaceInfo() {
+	container=$1
+	ifacename=$2
+	ovs=$3
+
+	iface_num=$(docker exec ${container} ip addr show | sed -n 's/\([0-9]*\): \('${ifacename}'@\).*/\1/p')
+    iface=$(ip addr show | sed -n 's/\([0-9]*\): \([a-z0-9]*_l\)@if'${iface_num}'.*/\2/p')
+    echo "Interface "${ovs}"-"${container}": "${iface}
+	monitor_interfaces="${monitor_interfaces} --interface ${iface}"
+}
+
 if [ -z "$1" ]; then
 	echo "Please Specify an experiment situation, it's either 'pytest' or 'onos'"
 	exit 1
@@ -76,33 +98,18 @@ do
 	docker exec -d ${vnfname} miniupnpd -f miniupnpd.conf
 done
 
-clientname=
-for i in $(seq 1 ${client_num})
-do
-	clientname=client${i}
-	docker run -itd --name ${clientname} --net none --cap-add NET_ADMIN py_test_client:record
-	ovs-docker add-port ovs-s1 eth0 ${clientname} --ipaddress=172.16.0.$((i+1))/24
-	docker exec ${clientname} ip route add default via ${client_gateway}
-	iface_num=$(docker exec ${clientname} ip addr show | sed -n 's/\([0-9]*\): \(eth0@\).*/\1/p')
-	iface=$(ip addr show | sed -n 's/\([0-9]*\): \([a-z0-9]*_l\)@if'${iface_num}'.*/\2/p')
-	echo "Interface s1-"${clientname}": "${iface}
-	monitor_interfaces="${monitor_interfaces} --interface ${iface}"
-done
+ConnectClient client1 ovs-s11 172.16.0.2/24
+ConnectClient client2 ovs-s1 172.16.0.3/24
 
-for i in $(seq 1 ${attacker_num})
-do
-	clientname=attacker${i}
-	docker run -itd --name ${clientname} --net none --cap-add NET_ADMIN py_test_attacker
-	ovs-docker add-port ovs-s2 eth0 ${clientname} --ipaddress=172.16.0.$((i+10))/24
-	docker exec ${clientname} ip route add default via ${client_gateway}
-	iface_num=$(docker exec ${clientname} ip addr show | sed -n 's/\([0-9]*\): \(eth0@\).*/\1/p')
-	iface=$(ip addr show | sed -n 's/\([0-9]*\): \([a-z0-9]*_l\)@if'${iface_num}'.*/\2/p')
-	echo "Interface s2-"${clientname}": "${iface}
-	monitor_interfaces="${monitor_interfaces} --interface ${iface}"
-done
+clientname=attacker
+docker run -itd --name ${clientname} --net none --cap-add NET_ADMIN py_test_attacker
+ovs-docker add-port ovs-s2 eth0 ${clientname} --ipaddress=172.16.0.11/24
+docker exec ${clientname} ip route add default via ${client_gateway}
+PrintIfaceInfo ${clientname} eth0 ovs-s2
 
 if [ "$1" == onos ]; then
 	echo "set ovs-controller connection"
+	ovs-vsctl set-controller ovs-s11 tcp:${controller_address}:${controller_port}
 	ovs-vsctl set-controller ovs-s1 tcp:${controller_address}:${controller_port}
 	ovs-vsctl set-controller ovs-s2 tcp:${controller_address}:${controller_port}
 	ovs-vsctl set-controller ovs-s3 tcp:${controller_address}:${controller_port}

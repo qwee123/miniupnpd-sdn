@@ -42,7 +42,7 @@ def GenerateToken(perm_str, pubkey, signkey):
     headerb64 = base64.b64encode(header.encode(encoding="utf-8"))
     proofb64 = base64.b64encode(proof.encode(encoding="utf-8"))
 
-    payload = header + proof
+    payload = headerb64 + b"." + proofb64
     pkey = OpenSSL.crypto.load_privatekey(OpenSSL.crypto.FILETYPE_PEM, signkey)
     sig = OpenSSL.crypto.sign(pkey, payload, "sha256")
     sigb64 = base64.b64encode(sig)

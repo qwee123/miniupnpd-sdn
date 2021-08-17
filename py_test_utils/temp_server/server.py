@@ -1,10 +1,14 @@
 from flask import Flask
+from flask import request
 import time
+import requests
 
 app = Flask(__name__)
 
 @app.route("/")
 def home():
+    print("The client IP is: {}".format(request.environ['REMOTE_ADDR']))
+    print("The client port is: {}".format(request.environ['REMOTE_PORT']))
     return "byebye\n"
 
 @app.route("/portmapping/index", methods=['GET'])

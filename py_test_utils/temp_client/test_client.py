@@ -12,6 +12,13 @@ service2 = device['WANCommonIFC1']
 print("Tests for service WANIPConn1: ")
 print(*(service.get_actions()), sep="\n")
 
+
+print("GetSpecificPortMappingEntry: ", service.GetSpecificPortMappingEntry(
+    NewRemoteHost="*",
+    NewExternalPort=5642,
+    NewProtocol="udp"
+))
+
 '''
 print("DeletePortMappingRange", service.DeletePortMappingRange(
     NewStartPort=20,
@@ -151,7 +158,7 @@ print("DeletePortMapping", service.DeletePortMapping(
     NewExternalPort=6667,
     NewProtocol="tcp"
 ))
-'''
+
 
 print("AddPortMapping: ", service.AddPortMapping(
     NewRemoteHost="*",
@@ -171,7 +178,7 @@ print("GetListOfPortMappings", service.GetListOfPortMappings(
     NewNumberOfPorts=20
 ))
 
-'''
+
 print("GetListOfPortMappings", service.GetListOfPortMappings(
     NewStartPort=20,
     NewEndPort=60000,

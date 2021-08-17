@@ -3,6 +3,6 @@ FROM python:3.6-buster
 RUN apt update && apt install -y net-tools iputils-ping vim tcpdump
 RUN python3 -m pip install flask upnpy
 
-COPY ./temp_server/server.py .
+COPY ./temp_server/ ./
 
-CMD python3 server.py
+CMD python3 demo.py

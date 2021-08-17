@@ -8,20 +8,18 @@ controller_igd_app_port=40000
 controller_container_name=
 client_gateway=172.16.0.1
 miniupnpd_addr=172.16.0.100
-miniupnpd_version=v11
+miniupnpd_version=v10
 auth_server_addr=172.16.0.150
 auth_server_port=50000
 auth_db_address=
 auth_db_root_pass=$(cat db_pass.txt)
-wan2_mac=c2:67:18:3d:bc:ca
-wan2_ip=192.168.1.11/24
 
 ConnectClient() {
 	client=$1
 	ovs=$2
 	client_ip=$3
 
-	docker run -itd --name ${client} --net none --cap-add NET_ADMIN -e auth_server_address=${auth_server_addr}":"${auth_server_port} py_test_client
+	docker run -itd --name ${client} --net none --cap-add NET_ADMIN -e auth_server_address=${auth_server_addr}":"${auth_server_port} py_test_client:record
 	ovs-docker add-port ${ovs} eth0 ${client} --ipaddress=${client_ip}
 	docker exec ${client} ip route add default via ${client_gateway}
 	PrintIfaceInfo ${client} eth0 ${ovs} 
@@ -87,20 +85,27 @@ fi
 docker run --name auth_db -e MARIADB_ROOT_PASSWORD=${auth_db_root_pass} --network ${auth_database_network} -td mariadb
 auth_db_address=$(docker inspect auth_db -f '{{ .NetworkSettings.Networks.'${auth_database_network}'.IPAddress }}')
 
-docker run -itd --name miniupnpd-sdn --cap-add NET_ADMIN --cap-add NET_BROADCAST \
+container_name=miniupnpd-linux
+miniupnpd_addr=172.16.0.100
+docker run -itd --name ${container_name} --cap-add NET_ADMIN --cap-add NET_BROADCAST \
+	--network none miniupnpd:vTime-linux
+ovs-docker add-port ovs-s3 eth0 ${container_name} --ipaddress=${miniupnpd_addr}/24
+
+container_name=miniupnpd-sdn-sdnauth
+miniupnpd_addr=172.16.0.101
+docker run -itd --name ${container_name} --cap-add NET_ADMIN --cap-add NET_BROADCAST \
 	-e CONTROLLER_ADDRESS=${controller_address}":"${controller_igd_app_port} \
-	--network ${onos_nfv_network} miniupnpd-sdn:${miniupnpd_version}
-ovs-docker add-port ovs-s3 eth1 miniupnpd-sdn --ipaddress=${miniupnpd_addr}/24
-PrintIfaceInfo miniupnpd-sdn eth1 ovs-s3
+	--network ${onos_nfv_network} miniupnpd-sdn:vTime-auth
+ovs-docker add-port ovs-s3 eth1 ${container_name} --ipaddress=${miniupnpd_addr}/24
+
+container_name=miniupnpd-sdn-sdn
+miniupnpd_addr=172.16.0.102
+docker run -itd --name ${container_name} --cap-add NET_ADMIN --cap-add NET_BROADCAST \
+	-e CONTROLLER_ADDRESS=${controller_address}":"${controller_igd_app_port} \
+	--network ${onos_nfv_network} miniupnpd-sdn:vTime
+ovs-docker add-port ovs-s3 eth1 ${container_name} --ipaddress=${miniupnpd_addr}/24
 
 ConnectClient client1 ovs-s11 172.16.0.2/24
-ConnectClient client2 ovs-s1 172.16.0.3/24
-
-clientname=attacker
-docker run -itd --name ${clientname} --net none --cap-add NET_ADMIN py_test_attacker
-ovs-docker add-port ovs-s2 eth0 ${clientname} --ipaddress=172.16.0.11/24
-docker exec ${clientname} ip route add default via ${client_gateway}
-PrintIfaceInfo ${clientname} eth0 ovs-s2
 
 if [ "$1" == onos ]; then
 	echo "set ovs-controller connection"
