@@ -75,6 +75,7 @@ int VerifyAndExtractAuthToken(const char* auth, int auth_len,
     /* Token format: [header].[proof payload in json].[proof signature] */
     headerb64 = strtok(auth_copy, delim);
     payloadb64 = strtok(NULL, delim);
+    int headerb64_len = strlen(headerb64), payloadb64_len = strlen(payloadb64);
     sigb64 = strtok(NULL, delim);
     if (payloadb64 == NULL || sigb64 == NULL) { //Incorrect format of auth token.
         syslog(LOG_ERR, "Incorrect format of token: %.*s\n", auth_len, auth);
@@ -83,7 +84,7 @@ int VerifyAndExtractAuthToken(const char* auth, int auth_len,
     }
 
     /* decode each part of the token through base64. */
-    if (1 != decodeBase64((unsigned char**)&header, &header_len, headerb64, strlen(headerb64)) ||
+    if (1 != decodeBase64((unsigned char**)&header, &header_len, headerb64, headerb64_len) ||
         1 != decodeBase64((unsigned char**)&payload, &payload_len, payloadb64, strlen(payloadb64)) ||
         1 != decodeBase64(&sig, &sig_len, sigb64, strlen(sigb64))) 
     {
@@ -92,13 +93,12 @@ int VerifyAndExtractAuthToken(const char* auth, int auth_len,
 		return -1;
     }
 
-    free(auth_copy);
-
     /* compose payload of the token siganature */
-    int token_payload_len = header_len + payload_len;
+    int token_payload_len = headerb64_len + payloadb64_len + 1; //headerb64+'.'+payloadb64
     char * token_payload = malloc(token_payload_len + 1);
-    memcpy(token_payload, header, header_len);
-    memcpy(token_payload + header_len, payload, payload_len);
+    memcpy(token_payload, headerb64, headerb64_len);
+    memcpy(token_payload + headerb64_len, ".", 1);
+    memcpy(token_payload + headerb64_len + 1, payloadb64, payloadb64_len);
     token_payload[token_payload_len] = '\0';
 
     char *ca_pub_key_path = "ca_rs256.key.pub";
@@ -114,6 +114,8 @@ int VerifyAndExtractAuthToken(const char* auth, int auth_len,
     free(token_payload);
     free(header);
     free(sig);
+
+    free(auth_copy);
 
     /* extract client's public key */
     struct json_tokener * tokener = json_tokener_new();
