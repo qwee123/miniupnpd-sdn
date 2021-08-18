@@ -1,6 +1,6 @@
 #!/bin/bash
 
-vnf_list=$(docker ps -a --format {{.Names}} -f name='^miniupnpd-sdn.*$')
+vnf_list=$(docker ps -a --format {{.Names}} -f name='^miniupnpd-.*$')
 for vnf in ${vnf_list}
 do
     ovs-docker del-ports ovs-s3 ${vnf}

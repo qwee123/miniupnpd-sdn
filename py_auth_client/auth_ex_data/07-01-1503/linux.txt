@@ -1,0 +1,142 @@
+Time to Prepare Request(ms):  2.7861595153808594
+testcase: linux1
+auth: 0
+discover&get description: 2.1730637550354004
+soap: 0.006307125091552734
+SOAP Interval: 570
+Verification Interval: 0
+Total: 956
+
+
+Time to Prepare Request(ms):  1.4264583587646484
+testcase: linux2
+auth: 0
+discover&get description: 2.1278698444366455
+soap: 0.004862546920776367
+SOAP Interval: 462
+Verification Interval: 0
+Total: 652
+
+
+Time to Prepare Request(ms):  1.5485286712646484
+testcase: linux3
+auth: 0
+discover&get description: 2.144639253616333
+soap: 0.005151033401489258
+SOAP Interval: 531
+Verification Interval: 0
+Total: 903
+
+
+Time to Prepare Request(ms):  1.4636516571044922
+testcase: linux4
+auth: 0
+discover&get description: 2.1427483558654785
+soap: 0.005095720291137695
+SOAP Interval: 507
+Verification Interval: 0
+Total: 676
+
+
+Time to Prepare Request(ms):  1.4219284057617188
+testcase: linux5
+auth: 0
+discover&get description: 2.11759090423584
+soap: 0.005058765411376953
+SOAP Interval: 534
+Verification Interval: 0
+Total: 881
+
+
+Time to Prepare Request(ms):  1.6031265258789062
+testcase: linux6
+auth: 0
+discover&get description: 2.130847215652466
+soap: 0.005391597747802734
+SOAP Interval: 583
+Verification Interval: 0
+Total: 791
+
+
+Time to Prepare Request(ms):  1.4622211456298828
+testcase: linux7
+auth: 0
+discover&get description: 2.1229653358459473
+soap: 0.004994392395019531
+SOAP Interval: 542
+Verification Interval: 0
+Total: 755
+
+Time to Prepare Request(ms):  1.5900135040283203
+testcase: linux8
+auth: 0
+discover&get description: 2.118313789367676
+soap: 0.00516819953918457
+SOAP Interval: 502
+Verification Interval: 0
+Total: 693
+
+
+Time to Prepare Request(ms):  1.5683174133300781
+testcase: linux9
+auth: 0
+discover&get description: 2.111788749694824
+soap: 0.005352497100830078
+SOAP Interval: 659
+Verification Interval: 0
+Total: 846
+
+Time to Prepare Request(ms):  1.46484375
+testcase: linux10
+auth: 0
+discover&get description: 2.1296651363372803
+soap: 0.0053670406341552734
+SOAP Interval: 519
+Verification Interval: 0
+Total: 831
+
+Time to Prepare Request(ms):  1.455068588256836
+testcase: linux11
+auth: 0
+discover&get description: 2.1269495487213135
+soap: 0.005041837692260742
+SOAP Interval: 600
+Verification Interval: 0
+Total: 929
+
+Time to Prepare Request(ms):  1.5597343444824219
+testcase: linux12
+auth: 0
+discover&get description: 2.1230318546295166
+soap: 0.0052073001861572266
+SOAP Interval: 539
+Verification Interval: 0
+Total: 734
+
+Time to Prepare Request(ms):  1.554250717163086
+testcase: linux13
+auth: 0
+discover&get description: 2.1244916915893555
+soap: 0.005379915237426758
+SOAP Interval: 603
+Verification Interval: 0
+Total: 958
+
+
+Time to Prepare Request(ms):  1.6002655029296875
+testcase: linux14
+auth: 0
+discover&get description: 2.1248412132263184
+soap: 0.0051422119140625
+SOAP Interval: 632
+Verification Interval: 0
+Total: 998
+
+Time to Prepare Request(ms):  1.477956771850586
+testcase: linux15
+auth: 0
+discover&get description: 2.127169609069824
+soap: 0.005071878433227539
+SOAP Interval: 558
+Verification Interval: 0
+Total: 879
