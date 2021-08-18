@@ -10,23 +10,44 @@ import requests
 import logging
 import datetime
 
+testmode = 'sdn-first'
+
 OUT_DIR = "./"
-tries = 10
-url = 'http://127.0.0.1:40000/' #normal case
-#url = 'http://192.168.1.10:1024/' #sdn
+sample_num = 50
+#url = 'http://www.google.com'
+url_normal = 'http://140.114.93.102:40000/' #normal case
+url_docker = 'http://172.17.0.2:60000'
+url_sdn = 'http://192.168.1.10:1024/' #sdn
+url = ''
+
+if testmode == 'normal':
+    url = url_normal
+elif testmode == 'docker':
+    url = url_docker
+elif testmode == 'sdn' or testmode == 'sdn-first':
+    url = url_sdn
+else:
+    exit(-1)
+
+requests.get(url) #init global object of requests package and activate the traffic in SDN mode
+if testmode == 'sdn-first':
+    time.sleep(20) # wait until the reative flow timeout
 
 timestamps = []
-
-s = requests.Session()
-timestamps.append(time.time())
-for i in range(tries):
-    s.get(url)
+for sn in range(sample_num):
     timestamps.append(time.time())
+    requests.get(url)
+    timestamps.append(time.time())
+    if testmode == 'sdn-first':
+        time.sleep(20) # wait until the reactive flow timeout
 
-durations = []
-for i in range(1, len(timestamps)):
-    durations.append((timestamps[i] - timestamps[i-1])*1000)
-
+filename_ext = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
+output = open(testmode+'-'+filename_ext, 'w')
+for i in range(0, len(timestamps), 2):
+    duration = (timestamps[i+1] - timestamps[i])*1000
+    output.write(str(duration) + ', ')
+output.close()
+'''
 plot_timestamps = [t+1 for t in range(tries)]
 
 fig, ax1 = plt.subplots()
@@ -53,3 +74,4 @@ ax2.set_xticks(plot_timestamps)
 
 filename_ext = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
 plt.savefig(os.sep.join([OUT_DIR, filename_ext]))
+'''

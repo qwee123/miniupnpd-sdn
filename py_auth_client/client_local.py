@@ -27,6 +27,7 @@ if __name__ == "__main__":
         'password': auth_password,
         'pubkey': pub_key
     }
+    
     r = requests.post(comm_scheme+auth_server_addr+"/applyToken", data=user_cred, verify=False)    
     auth_token = r.text
 

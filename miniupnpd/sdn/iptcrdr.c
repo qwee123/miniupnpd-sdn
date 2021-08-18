@@ -17,6 +17,7 @@
 #include <dlfcn.h>
 #include <xtables.h>
 #include <linux/version.h>
+#include <sys/time.h>
 
 #include "../getifstats.h"
 #include "../config.h"
@@ -312,7 +313,8 @@ _add_redirect_and_filter_rules(const char * rhost, unsigned short eport,
 					unsigned short * final_eport)
 {
 	struct json_object *jobj = json_object_new_object();
-
+	struct timeval before, before_http, after_http, after;
+	gettimeofday(&before, NULL);
 	if (json_object_object_add(jobj, json_tag_rhost, json_object_new_string(rhost)) < 0
 		|| json_object_object_add(jobj, json_tag_eport, json_object_new_int(eport)) < 0
 	    || json_object_object_add(jobj, json_tag_proto, json_object_new_string(proto)) < 0
@@ -349,10 +351,11 @@ _add_redirect_and_filter_rules(const char * rhost, unsigned short eport,
 		.request = jobj,
 		.done = false
 	};
+	gettimeofday(&before_http, NULL);
 	//printf("jobj from str:\n---\n%s\n---\n", json_object_to_json_string_ext(data.request, JSON_C_TO_STRING_SPACED | JSON_C_TO_STRING_PRETTY));
 	mg_http_connect(&mgr, controller_address, OnosAddIGDPortMapping, &data);
-	
 	while(!data.done) mg_mgr_poll(&mgr, 1000);
+	gettimeofday(&after_http, NULL);
 
 	if (data.response_code == CONFLICT_409) {
 		if (allowed_rdr_ports != NULL) { //addAny
@@ -377,7 +380,15 @@ _add_redirect_and_filter_rules(const char * rhost, unsigned short eport,
 		syslog(LOG_WARNING, "Fail to retrieve portnumber from reponses of onos.");
 		return 1;
 	}
-	
+	gettimeofday(&after, NULL);
+	printf("Before HTTP Interval: %ld\n",
+		(before_http.tv_sec-before.tv_sec)*1000000 + (before_http.tv_usec-before.tv_usec));
+	printf("HTTP Interval: %ld\n",
+		(after_http.tv_sec-before_http.tv_sec)*1000000 + (after_http.tv_usec-before_http.tv_usec));
+	printf("After HTTP Interval: %ld\n",
+		(after.tv_sec-after_http.tv_sec)*1000000 + (after.tv_usec-after_http.tv_usec));
+	printf("Interval: %ld\n",
+		(after.tv_sec-before.tv_sec)*1000000 + (after.tv_usec-before.tv_usec));
 	return ret_code;
 }
 

@@ -2,6 +2,7 @@ from flask import Flask, request
 from utils import VerifyPassword, GenerateToken
 import os
 import mariadb
+import time
 
 app = Flask(__name__)
 
@@ -33,20 +34,24 @@ def applyToken():
 
     cursor = conn.cursor()
     cursor.execute("Select id, username, password from users where username=?", (username,))
- 
+
     result = cursor.fetchall()
     if len(result) != 1 or result[0][1] != username:
         return "login failed.", 403
     elif VerifyPassword(result[0][2], password):
+        t1 = time.time()
         cursor.execute("Select permission from igdPermission where user_id=?", (result[0][0],))
+        t2 = time.time()
         permission = cursor.fetchall()
         if len(permission) != 1:
             return "Fail to Generate token.", 500
-
+        t3 = time.time()
         token = GenerateToken(permission[0][0], pubkey, signkey)
         if token == "":
             return "Fail to Generate token.", 500
 
+        t4 = time.time()
+        print((t2-t1)*1000, (t3-t2)*1000, (t4-t3)*1000)
         return token
     else:
         return "login failed.", 403

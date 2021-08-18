@@ -3111,11 +3111,16 @@ static void mg_iotest(struct mg_mgr *mgr, int ms) {
       FD_SET(FD(c), &wset);
   }
 
+  struct timeval before, after;
+  gettimeofday(&before, NULL);
   if ((rc = select(maxfd + 1, &rset, &wset, NULL, &tv)) < 0) {
     LOG(LL_DEBUG, ("select: %d %d", rc, MG_SOCK_ERRNO));
     FD_ZERO(&rset);
     FD_ZERO(&wset);
   }
+  gettimeofday(&after, NULL);
+  printf("Monggose Interval: %ld\n",
+		(after.tv_sec-before.tv_sec)*1000000 + (after.tv_usec-before.tv_usec));
 
   for (c = mgr->conns; c != NULL; c = c->next) {
     // TLS might have stuff buffered, so dig everything

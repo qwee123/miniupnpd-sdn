@@ -1,4 +1,5 @@
-from flask import Flask
+from flask import Flask, request
+from werkzeug.serving import WSGIRequestHandler
 
 app = Flask(__name__)
 
@@ -6,4 +7,5 @@ app = Flask(__name__)
 def home():
     return "byebye\n"
 
-app.run(host = "127.0.0.1", port = 40000)
+WSGIRequestHandler.protocol_version = "HTTP/1.1"
+app.run(host = "0.0.0.0", port = 40000)

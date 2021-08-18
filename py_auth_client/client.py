@@ -2,6 +2,7 @@ from upnpy_auth import upnpy
 import urllib3
 import requests
 import os
+import time
 
 if __name__ == "__main__":
 
@@ -27,13 +28,18 @@ if __name__ == "__main__":
         'password': auth_password,
         'pubkey': pub_key
     }
-    r = requests.post(comm_scheme+auth_server_addr+"/applyToken", data=user_cred, verify='./cert.pem')    
+    b1 = time.time()
+    r = requests.post(comm_scheme+auth_server_addr+"/applyToken", data=user_cred, verify=False)    
+    a1 = time.time()
+    print((a1-b1)*1000)
+    
     auth_token = r.text
 
     with open("rs256.key", "r") as f:
         priv_key = f.read()
         f.close()
- 
+
+'''
     auth_token = "Bearer " + auth_token
 
     upnp = upnpy.UPnP()
@@ -56,3 +62,4 @@ if __name__ == "__main__":
         Auth=auth_token,
         SignKey=priv_key
     ))
+'''
