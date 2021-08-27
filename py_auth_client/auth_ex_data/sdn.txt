@@ -1,117 +1,138 @@
-Time to Prepare Request(ms):  1.4362335205078125
+Time to Prepare Request(ms):  1.5778541564941406
 testcase: sdn1
 auth: 0
-discover&get description: 2.1209323406219482
-soap: 0.026623964309692383
-SOAP: 1622533534 202856 1622533534 224690
-SOAP Interval: 21834
+discover&get description: 2.1281137466430664
+soap: 0.023268461227416992
 Verification Interval: 0
-Total: 22177
+SOAP Interval: 18176
+Total: 18495
 
------------------------------------------
-
-Time to Prepare Request(ms):  1.5053749084472656
+Time to Prepare Request(ms):  1.4982223510742188
 testcase: sdn2
 auth: 0
-discover&get description: 2.117344379425049
-soap: 0.01705145835876465
-SOAP: 1622533630 968924 1622533630 981558
-SOAP Interval: 12634
+discover&get description: 2.1080853939056396
+soap: 0.02103257179260254
 Verification Interval: 0
-Total: 12801
+SOAP Interval: 16527
+Total: 16898
 
------------------------------------------
-
-Time to Prepare Request(ms):  1.4636516571044922
+Time to Prepare Request(ms):  1.615762710571289
 testcase: sdn3
 auth: 0
-discover&get description: 2.1196274757385254
-soap: 0.022886037826538086
-SOAP: 1622533654 555811 1622533654 573988
-SOAP Interval: 18177
+discover&get description: 2.116694450378418
+soap: 0.02060079574584961
+SOAP Interval: 15586
 Verification Interval: 0
-Total: 18541
+Total: 15923
 
------------------------------------------
 
-Time to Prepare Request(ms):  1.4739036560058594
+Time to Prepare Request(ms):  1.4355182647705078
 testcase: sdn4
 auth: 0
-discover&get description: 2.115661859512329
-soap: 0.01778125762939453
-SOAP: 1622533679 291644 1622533679 304865
-SOAP Interval: 13221
+discover&get description: 2.1189587116241455
+soap: 0.021820783615112305
+SOAP Interval: 17529
 Verification Interval: 0
-Total: 13383
+Total: 17725
 
------------------------------------------
 
-Time to Prepare Request(ms):  1.5327930450439453
+Time to Prepare Request(ms):  1.40380859375
 testcase: sdn5
 auth: 0
-discover&get description: 2.1125736236572266
-soap: 0.03510928153991699
-SOAP: 1622533730 625566 1622533730 656113
-SOAP Interval: 30547
+discover&get description: 2.1275479793548584
+soap: 0.02286839485168457
+SOAP Interval: 18196
 Verification Interval: 0
-Total: 30735
+Total: 18521
 
------------------------------------------
-
-Time to Prepare Request(ms):  1.5115737915039062
+Time to Prepare Request(ms):  1.463174819946289
 testcase: sdn6
 auth: 0
-discover&get description: 2.117131233215332
-soap: 0.014306306838989258
-SOAP: 1622533817 524907 1622533817 534990
-SOAP Interval: 10083
+discover&get description: 2.1095426082611084
+soap: 0.029994487762451172
+SOAP Interval: 25596
 Verification Interval: 0
-Total: 10399
+Total: 26003
 
------------------------------------------
-
-Time to Prepare Request(ms):  1.5230178833007812
+Time to Prepare Request(ms):  1.3859272003173828
 testcase: sdn7
 auth: 0
-discover&get description: 2.1122324466705322
-soap: 0.0168302059173584
-SOAP: 1622533840 488816 1622533840 501194
-SOAP Interval: 12378
+discover&get description: 2.129459857940674
+soap: 0.028105974197387695
+SOAP Interval: 23686
 Verification Interval: 0
-Total: 12709
+Total: 23860
 
------------------------------------------
-
-Time to Prepare Request(ms):  1.5265941619873047
-testcase: sdn8  
+Time to Prepare Request(ms):  1.4345645904541016
+testcase: sdn8
 auth: 0
-discover&get description: 2.1051602363586426
-soap: 0.01900792121887207
-SOAP: 1622533857 463814 1622533857 478454
-SOAP Interval: 14640
+discover&get description: 2.1173908710479736
+soap: 0.018584489822387695
+SOAP Interval: 14068
 Verification Interval: 0
-Total: 14747
+Total: 14420
 
------------------------------------------
-
-Time to Prepare Request(ms):  1.4061927795410156
+Time to Prepare Request(ms):  1.4271736145019531
 testcase: sdn9
 auth: 0
-discover&get description: 2.1157705783843994
-soap: 0.018671035766601562
-SOAP: 1622533878 822164 1622533878 836442
-SOAP Interval: 14278
+discover&get description: 2.1202049255371094
+soap: 0.01715874671936035
+SOAP Interval: 12600
 Verification Interval: 0
-Total: 14422
+Total: 12750
 
------------------------------------------
-
-Time to Prepare Request(ms):  1.5034675598144531
+Time to Prepare Request(ms):  1.615285873413086
 testcase: sdn10
 auth: 0
-discover&get description: 2.1185619831085205
-soap: 0.01709437370300293
-SOAP: 1622533903 842852 1622533903 855265
-SOAP Interval: 12413
+discover&get description: 2.12532901763916
+soap: 0.018678665161132812
+SOAP Interval: 13791
 Verification Interval: 0
-Total: 12588
+Total: 14114
+
+Time to Prepare Request(ms):  1.57928466796875
+testcase: sdn11
+auth: 0
+discover&get description: 2.1278634071350098
+soap: 0.015181541442871094
+SOAP Interval: 10531
+Verification Interval: 0
+Total: 10778
+
+
+Time to Prepare Request(ms):  1.4879703521728516
+testcase: sdn12
+auth: 0
+discover&get description: 2.1242785453796387
+soap: 0.019824504852294922
+SOAP Interval: 15311
+Verification Interval: 0
+Total: 15629
+
+
+Time to Prepare Request(ms):  1.4367103576660156
+testcase: sdn13
+auth: 0
+discover&get description: 2.123444080352783
+soap: 0.02216815948486328
+SOAP Interval: 17779
+Verification Interval: 0
+Total: 17957
+
+Time to Prepare Request(ms):  1.4221668243408203
+testcase: sdn14
+auth: 0
+discover&get description: 2.114473819732666
+soap: 0.01756906509399414
+SOAP Interval: 13054
+Verification Interval: 0
+Total: 13487
+
+Time to Prepare Request(ms):  1.4023780822753906
+testcase: sdn15
+auth: 0
+discover&get description: 2.118823766708374
+soap: 0.01744842529296875
+SOAP Interval: 13112
+Verification Interval: 0
+Total: 13452

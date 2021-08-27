@@ -1,128 +1,141 @@
-Time to Prepare Request(ms):  8.316755294799805
+Time to Prepare Request(ms):  9.242057800292969
 testcase: sdnauth1
-auth: 0.15680599212646484
-discover&get description: 2.121549606323242
-soap: 0.02811264991760254
-Verification: 1622533072 805825 1622533072 806410
-SOAP: 1622533072 806412 1622533072 822441
-Verification Interval: 585
-SOAP Interval: 16029
-Total: 16793
+auth: 0.14543986320495605
+discover&get description: 2.132225751876831
+soap: 0.025107622146606445
+Verification Interval: 595
+SOAP Interval: 12243
+Total: 13199
 
-------------------------------------------
-
-Time to Prepare Request(ms):  7.10606575012207
+Time to Prepare Request(ms):  7.817268371582031
 testcase: sdnauth2
-auth: 0.17911291122436523
-discover&get description: 2.1141786575317383
-soap: 0.02296924591064453
-Verification: 1622533109 714041 1622533109 714569
-SOAP: 1622533109 714570 1622533109 727419
-Verification Interval: 528
-SOAP Interval: 12849
-Total: 13530
+auth: 0.1295030117034912
+discover&get description: 2.125955820083618
+soap: 0.024688243865966797
+Verification Interval: 486
+SOAP Interval: 13660
+Total: 14336
 
-------------------------------------------
-
-Time to Prepare Request(ms):  7.724761962890625
+Time to Prepare Request(ms):  8.181571960449219
 testcase: sdnauth3
-auth: 0.15447044372558594
-discover&get description: 2.1182701587677
-soap: 0.02973651885986328
-Verification: 1622533153 448837 1622533153 449381
-SOAP: 1622533153 449383 1622533153 467303
-Verification Interval: 544
-SOAP Interval: 17920
-Total: 18609
+auth: 0.12545394897460938
+discover&get description: 2.1157617568969727
+soap: 0.026812076568603516
+Verification Interval: 534
+SOAP Interval: 14769
+Total: 15516
 
-------------------------------------------
 
-Time to Prepare Request(ms):  8.514404296875
+Time to Prepare Request(ms):  8.364677429199219
 testcase: sdnauth4
-auth: 0.15975141525268555
-discover&get description: 2.1151535511016846
-soap: 0.024915456771850586
-Verification: 1622533190 883588 1622533190 884090
-SOAP: 1622533190 884092 1622533190 896741
-Verification Interval: 502
-SOAP Interval: 12649
-Total: 13328
+auth: 0.14536690711975098
+discover&get description: 2.125741958618164
+soap: 0.026352882385253906
+Verification Interval: 648
+SOAP Interval: 14161
+Total: 15055
 
-------------------------------------------
 
-Time to Prepare Request(ms):  7.853507995605469
+Time to Prepare Request(ms):  8.237361907958984
 testcase: sdnauth5
-auth: 0.14883971214294434
-discover&get description: 2.1138079166412354
-soap: 0.022001981735229492
-Verification: 1622533218 399773 1622533218 400314
-SOAP: 1622533218 400315 1622533218 410743
-Verification Interval: 541
-SOAP Interval: 10428
-Total: 11188
+auth: 0.11342191696166992
+discover&get description: 2.116823196411133
+soap: 0.025495052337646484
+Verification Interval: 509
+SOAP Interval: 13458
+Total: 14578
 
-------------------------------------------
-
-Time to Prepare Request(ms):  8.539676666259766
+Time to Prepare Request(ms):  8.414745330810547
 testcase: sdnauth6
-auth: 0.17105650901794434
-discover&get description: 2.1147427558898926
-soap: 0.027071475982666016
-Verification: 1622533270 362966 1622533270 363488
-SOAP: 1622533270 363489 1622533270 377597
-Verification Interval: 522
-SOAP Interval: 14108
-Total: 14919
+auth: 0.13239645957946777
+discover&get description: 2.126918077468872
+soap: 0.024730682373046875
+Verification Interval: 474
+SOAP Interval: 12862
+Total: 13489
 
-------------------------------------------
-
-Time to Prepare Request(ms):  8.324146270751953
+Time to Prepare Request(ms):  8.229494094848633
 testcase: sdnauth7
-auth: 0.16104698181152344
-discover&get description: 2.113485336303711
-soap: 0.027129411697387695
-Verification: 1622533317 545862 1622533317 546456
-SOAP: 1622533317 546457 1622533317 561439
-Verification Interval: 594
-SOAP Interval: 14982
-Total: 15776
+auth: 0.12990498542785645
+discover&get description: 2.1203360557556152
+soap: 0.025722265243530273
+Verification Interval: 482
+SOAP Interval: 14187
+Total: 14843
 
-------------------------------------------
 
-Time to Prepare Request(ms):  6.888628005981445
+Time to Prepare Request(ms):  7.425785064697266
 testcase: sdnauth8
-auth: 0.1544663906097412
-discover&get description: 2.1131625175476074
-soap: 0.025673389434814453
-Verification: 1622533362 433844 1622533362 434190
-SOAP: 1622533362 434191 1622533362 449564
-Verification Interval: 346
-SOAP Interval: 15373
-Total: 15896
+auth: 0.14278054237365723
+discover&get description: 2.123523712158203
+soap: 0.034750938415527344
+Verification Interval: 371
+SOAP Interval: 24176
+Total: 24763
 
-------------------------------------------
 
-Time to Prepare Request(ms):  5.929470062255859
+Time to Prepare Request(ms):  6.987094879150391
 testcase: sdnauth9
-auth: 0.15552234649658203
-discover&get description: 2.1137354373931885
-soap: 0.020090579986572266
-Verification: 1622533419 121399 1622533419 121778
-SOAP: 1622533419 121779 1622533419 132667
-Verification Interval: 379
-SOAP Interval: 10888
-Total: 11507
+auth: 0.13877415657043457
+discover&get description: 2.1200032234191895
+soap: 0.023310422897338867
+Verification Interval: 550
+SOAP Interval: 12767
+Total: 13640
 
-------------------------------------------
 
-Time to Prepare Request(ms):  8.195877075195312
+Time to Prepare Request(ms):  8.202314376831055
 testcase: sdnauth10
-auth: 0.15178823471069336
-discover&get description: 2.114389657974243
-soap: 0.026272296905517578
-Verification: 1622533451 907772 1622533451 908250
-SOAP: 1622533451 908251 1622533451 922834
-Verification Interval: 478
-SOAP Interval: 14583
-Total: 15234
+auth: 0.1357440948486328
+discover&get description: 2.113480806350708
+soap: 0.023995161056518555
+Verification Interval: 519
+SOAP Interval: 12216
+Total: 12952
 
+Time to Prepare Request(ms):  8.252143859863281
+testcase: sdnauth11
+auth: 0.13985896110534668
+discover&get description: 2.124560832977295
+soap: 0.02888202667236328
+Verification Interval: 601
+SOAP Interval: 16672
+Total: 17588
+
+
+Time to Prepare Request(ms):  8.34965705871582
+testcase: sdnauth12
+auth: 0.1296398639678955
+discover&get description: 2.11863374710083
+soap: 0.02515101432800293
+Verification Interval: 531
+SOAP Interval: 13188
+Total: 13914
+
+Time to Prepare Request(ms):  7.598161697387695
+testcase: sdnauth13
+auth: 0.13051247596740723
+discover&get description: 2.1242597103118896
+soap: 0.025800704956054688
+Verification Interval: 415
+SOAP Interval: 15139
+Total: 15898
+
+Time to Prepare Request(ms):  8.130311965942383
+testcase: sdnauth14
+auth: 0.13166093826293945
+discover&get description: 2.137730360031128
+soap: 0.023579835891723633
+Verification Interval: 526
+SOAP Interval: 12095
+Total: 12852
+
+
+Time to Prepare Request(ms):  8.451223373413086
+testcase: sdnauth15
+auth: 0.14148807525634766
+discover&get description: 2.1208550930023193
+soap: 0.040151357650756836
+Verification Interval: 519
+SOAP Interval: 27988
+Total: 28794

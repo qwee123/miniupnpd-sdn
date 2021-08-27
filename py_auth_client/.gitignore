@@ -3,3 +3,4 @@ __pycache__
 *.key.pub
 *.pem
 user_password.txt
+*.png

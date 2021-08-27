@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from string import Template
+import math
 
 linux_auth = []
 linux_ssdp = []
@@ -86,6 +87,13 @@ def average(array):
     
     return total/len(array)
 
+def std_devia(array, avg):
+    squared_total = 0
+    for value in array:
+        squared_total += math.pow((value-avg), 2)
+
+    return math.sqrt(squared_total/(len(array)-1))
+
 with open('linux.txt') as f:
     parseLinuxData(f)
     f.close()
@@ -104,6 +112,12 @@ linux_soap_avg = average(linux_soap)
 linux_s_pr_avg = average(linux_s_pr)
 linux_s_ver_avg = average(linux_s_ver)
 linux_s_soap_avg = average(linux_s_soap)
+linux_auth_devia = std_devia(linux_auth, linux_auth_avg)
+linux_ssdp_devia = std_devia(linux_ssdp, linux_ssdp_avg)
+linux_soap_devia = std_devia(linux_soap, linux_soap_avg)
+linux_s_pr_devia = std_devia(linux_s_pr, linux_s_pr_avg)
+linux_s_ver_devia = std_devia(linux_s_ver, linux_s_ver_avg)
+linux_s_soap_devia = std_devia(linux_s_soap, linux_s_soap_avg)
 
 sdn_auth_avg = average(sdn_auth)
 sdn_ssdp_avg = average(sdn_ssdp)
@@ -111,6 +125,12 @@ sdn_soap_avg = average(sdn_soap)
 sdn_s_pr_avg = average(sdn_s_pr)
 sdn_s_ver_avg = average(sdn_s_ver)
 sdn_s_soap_avg = average(sdn_s_soap)
+sdn_auth_devia = std_devia(sdn_auth, sdn_auth_avg)
+sdn_ssdp_devia = std_devia(sdn_ssdp, sdn_ssdp_avg)
+sdn_soap_devia = std_devia(sdn_soap, sdn_soap_avg)
+sdn_s_pr_devia = std_devia(sdn_s_pr, sdn_s_pr_avg)
+sdn_s_ver_devia = std_devia(sdn_s_ver, sdn_s_ver_avg)
+sdn_s_soap_devia = std_devia(sdn_s_soap, sdn_s_soap_avg)
 
 sdnauth_auth_avg = average(sdnauth_auth)
 sdnauth_ssdp_avg = average(sdnauth_ssdp)
@@ -118,15 +138,21 @@ sdnauth_soap_avg = average(sdnauth_soap)
 sdnauth_s_pr_avg = average(sdnauth_s_pr)
 sdnauth_s_ver_avg = average(sdnauth_s_ver)
 sdnauth_s_soap_avg = average(sdnauth_s_soap)
+sdnauth_auth_devia = std_devia(sdnauth_auth, sdnauth_auth_avg)
+sdnauth_ssdp_devia = std_devia(sdnauth_ssdp, sdnauth_ssdp_avg)
+sdnauth_soap_devia = std_devia(sdnauth_soap, sdnauth_soap_avg)
+sdnauth_s_pr_devia = std_devia(sdnauth_s_pr, sdnauth_s_pr_avg)
+sdnauth_s_ver_devia = std_devia(sdnauth_s_ver, sdnauth_s_ver_avg)
+sdnauth_s_soap_devia = std_devia(sdnauth_s_soap, sdnauth_s_soap_avg)
 
 template='''
 $situation
-auth: $auth
-ssdp: $ssdp
-soap: $soap
-s_prepare_request: $s_pr
-s_verify_auth: $s_ver
-s_soap: $s_soap
+auth: $auth($auth_devia)
+ssdp: $ssdp($ssdp_devia)
+soap: $soap($soap_devia)
+s_prepare_request: $s_pr($s_pr_devia)
+s_verify_auth: $s_ver($s_ver_devia)
+s_soap: $s_soap($s_soap_devia)
 '''
 
 t = Template(template)
@@ -137,8 +163,15 @@ print(t.substitute({
     'soap': linux_soap_avg,
     's_pr': linux_s_pr_avg,
     's_ver': linux_s_ver_avg,
-    's_soap': linux_s_soap_avg
+    's_soap': linux_s_soap_avg,
+    'auth_devia': linux_auth_devia,
+    'ssdp_devia': linux_ssdp_devia,
+    'soap_devia': linux_soap_devia,
+    's_pr_devia': linux_s_pr_devia,
+    's_ver_devia': linux_s_ver_devia,
+    's_soap_devia': linux_s_soap_devia
 }))
+
 print(t.substitute({
     'situation': 'sdn',
     'auth': sdn_auth_avg,
@@ -146,8 +179,15 @@ print(t.substitute({
     'soap': sdn_soap_avg,
     's_pr': sdn_s_pr_avg,
     's_ver': sdn_s_ver_avg,
-    's_soap': sdn_s_soap_avg
+    's_soap': sdn_s_soap_avg,
+    'auth_devia': sdn_auth_devia,
+    'ssdp_devia': sdn_ssdp_devia,
+    'soap_devia': sdn_soap_devia,
+    's_pr_devia': sdn_s_pr_devia,
+    's_ver_devia': sdn_s_ver_devia,
+    's_soap_devia': sdn_s_soap_devia
 }))
+
 print(t.substitute({
     'situation': 'sdnauth',
     'auth': sdnauth_auth_avg,
@@ -155,7 +195,13 @@ print(t.substitute({
     'soap': sdnauth_soap_avg,
     's_pr': sdnauth_s_pr_avg,
     's_ver': sdnauth_s_ver_avg,
-    's_soap': sdnauth_s_soap_avg
+    's_soap': sdnauth_s_soap_avg,
+    'auth_devia': sdnauth_auth_devia,
+    'ssdp_devia': sdnauth_ssdp_devia,
+    'soap_devia': sdnauth_soap_devia,
+    's_pr_devia': sdnauth_s_pr_devia,
+    's_ver_devia': sdnauth_s_ver_devia,
+    's_soap_devia': sdnauth_s_soap_devia
 }))
 
 pr = [linux_s_pr_avg, sdn_s_pr_avg, sdnauth_s_pr_avg]
